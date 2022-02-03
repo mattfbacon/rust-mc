@@ -1,0 +1,12 @@
+[package]
+name = "rust-mc"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bitvec = "1.0.0"
+encde = { path = "encde", features = ["derive", "big_endian"] }
+figment = { version = "0.10.6", features = ["toml", "env"] }
+hematite-nbt = { git = "https://github.com/mattfbacon/hematite_nbt" }
+magnetic = "2.2.0"
+serde = "1.0.136"
