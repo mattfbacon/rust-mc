@@ -43,12 +43,12 @@ macro_rules! impl_var {
 			fn encode(&self, writer: &mut dyn Write) -> EResult<()> {
 				let mut val = self.0 as $under_u; // so >> shifts the sign bit
 				loop {
-					if (val & <$under_u>::from(EXTEND_BIT)) == 0 {
+					if val < EXTEND_BIT.try_into().unwrap() {
 						writer.write_all(&[val as u8])?;
 						return Ok(());
 					}
 					writer.write_all(&[(val & <$under_u>::from(DATA_MASK)) as u8 | EXTEND_BIT])?;
-					val >>= DATA_BITS;
+					val = val.wrapping_shr(DATA_BITS.try_into().unwrap());
 				}
 			}
 		}
@@ -136,7 +136,7 @@ mod test {
 		assert_eq!(decode_from_entire_slice::<VarLong>(&[128, 1]).unwrap(), VarLong(128));
 		assert_eq!(decode_from_entire_slice::<VarLong>(&[255, 1]).unwrap(), VarLong(255));
 		assert_eq!(decode_from_entire_slice::<VarLong>(&[255, 255, 255, 255, 7]).unwrap(), VarLong(2147483647));
-		assert_eq!(decode_from_entire_slice::<VarLong>(&[255, 255, 255, 255, 255, 255, 255, 255, 255, 127]).unwrap(), VarLong(9223372036854775807));
+		assert_eq!(decode_from_entire_slice::<VarLong>(&[255, 255, 255, 255, 255, 255, 255, 255, 127]).unwrap(), VarLong(9223372036854775807));
 		assert_eq!(decode_from_entire_slice::<VarLong>(&[255, 255, 255, 255, 255, 255, 255, 255, 255, 1]).unwrap(), VarLong(-1));
 		assert_eq!(decode_from_entire_slice::<VarLong>(&[128, 128, 128, 128, 248, 255, 255, 255, 255, 1]).unwrap(), VarLong(-2147483648));
 		assert_eq!(decode_from_entire_slice::<VarLong>(&[128, 128, 128, 128, 128, 128, 128, 128, 128, 1]).unwrap(), VarLong(-9223372036854775808));

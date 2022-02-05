@@ -1,24 +1,6 @@
-use crate::packets::helpers::{Chat, PrefixedBytes, PrefixedString, Uuid};
+use crate::packets::helpers::{Chat, PrefixedArray, PrefixedBorrowedBytes, PrefixedBytes, PrefixedString, Uuid};
 use crate::packets::varint::VarInt;
 use encde::Encode;
-
-#[derive(Encode)]
-pub struct Disconnect {
-	reason: Chat,
-}
-
-#[derive(Encode)]
-pub struct Encryption {
-	server_id: PrefixedString,
-	public_key: PrefixedBytes,
-	verify_token: PrefixedBytes,
-}
-
-#[derive(Encode)]
-pub struct LoginSuccess {
-	uuid: Uuid,
-	username: PrefixedString,
-}
 
 /// This packet is optional and not sending it means to not compress.
 /// Thus, we don't need to send it until we've implemented compression.
@@ -32,13 +14,17 @@ pub struct SetCompression {
 
 #[derive(Encode)]
 #[repr(u8)]
-pub enum Packet {
+pub enum Packet<'a> {
 	#[encde(wire_tag = 0)]
-	Disconnect(Disconnect),
+	Disconnect { reason: Chat },
 	#[encde(wire_tag = 1)]
-	Encryption(Encryption),
+	Encryption {
+		server_id: PrefixedString,
+		public_key: PrefixedBorrowedBytes<'a>,
+		verify_token: PrefixedArray<u8, 4>,
+	},
 	#[encde(wire_tag = 2)]
-	LoginSuccess(LoginSuccess),
+	LoginSuccess { uuid: Uuid, username: PrefixedString },
 	#[encde(wire_tag = 3)]
 	SetCompression(SetCompression),
 	// #[encde(wire_tag = 4)]

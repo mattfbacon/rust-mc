@@ -52,7 +52,7 @@ into_unknown_sign_int_impl!(Unsigned using u64, u8, u16, u32, u64, usize);
 #[derive(Debug)]
 pub enum Error {
 	/// An underlying error occurred when writing to a `std::io::Write` or reading to a `std::io::Read`
-	IO(io::Error),
+	Io(io::Error),
 	/// The length of the underlying data did not match the expected length
 	UnexpectedLength {
 		/// The expected length of the data
@@ -78,13 +78,13 @@ pub enum Error {
 	/// A static custom error
 	CustomStr(&'static str),
 	/// A dynamic custom error
-	Custom(Box<dyn std::error::Error + 'static>),
+	Custom(Box<dyn std::error::Error + Sync + Send + 'static>),
 }
 
 impl std::fmt::Display for Error {
 	fn fmt(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
 		match self {
-			Self::IO(e) => write!(formatter, "IO error: {}", e),
+			Self::Io(e) => write!(formatter, "IO error: {}", e),
 			Self::UnexpectedLength { expected, actual } => write!(formatter, "Length ({}) did not match expected ({})", actual, expected),
 			Self::UnrecognizedEnumDiscriminant { enum_name, expected, actual } => write!(formatter, "Unrecognized enum discriminant {} for enum {}; expected one of {:?}", actual, enum_name, expected),
 			Self::InvalidFormat { format_name } => write!(formatter, "Invalid format for {}", format_name),
@@ -97,6 +97,7 @@ impl std::fmt::Display for Error {
 impl std::error::Error for Error {
 	fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
 		match self {
+			Self::Io(underlying) => Some(underlying),
 			Self::Custom(underlying) => Some(&**underlying),
 			_ => None,
 		}
@@ -105,7 +106,7 @@ impl std::error::Error for Error {
 
 impl From<io::Error> for Error {
 	fn from(e: io::Error) -> Self {
-		Self::IO(e)
+		Self::Io(e)
 	}
 }
 impl From<std::str::Utf8Error> for Error {

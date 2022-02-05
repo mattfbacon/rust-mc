@@ -4,14 +4,15 @@ use encde::Decode;
 
 #[derive(Decode, Debug)]
 pub struct Handshake {
-	protocol_version: VarInt,
-	server_addr: PrefixedString,
-	server_port: u16,
+	pub protocol_version: VarInt,
+	pub server_addr: PrefixedString,
+	pub server_port: u16,
 	/// status or login
-	next_state: super::super::ProtocolState,
+	pub next_state: super::super::ProtocolState,
 }
 
 #[derive(Decode, Debug)]
+#[repr(u8)]
 pub enum Packet {
 	#[encde(wire_tag = 0)]
 	Handshake(Handshake),

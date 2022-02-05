@@ -1,24 +1,19 @@
 use crate::packets::helpers::{PrefixedBytes, PrefixedString};
 use encde::Decode;
 
-#[derive(Decode)]
-struct LoginStart {
-	username: PrefixedString,
-}
-
-#[derive(Decode)]
-struct Encryption {
-	shared_secret: PrefixedBytes,
-	verify_token: PrefixedBytes,
+#[derive(Decode, Debug)]
+pub struct Encryption {
+	pub shared_secret: PrefixedBytes,
+	pub verify_token: PrefixedBytes,
 }
 
 // TODO LoginPluginResponse
 
-#[derive(Decode)]
+#[derive(Decode, Debug)]
 #[repr(u8)]
 pub enum Packet {
 	#[encde(wire_tag = 0)]
-	LoginStart(LoginStart),
+	LoginStart { username: PrefixedString },
 	#[encde(wire_tag = 1)]
 	Encryption(Encryption),
 	// #[encde(wire_tag = 2)]

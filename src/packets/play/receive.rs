@@ -331,6 +331,7 @@ pub struct PlaceBlock {
 pub struct UseItem(PlayerHand);
 
 #[derive(Decode)]
+#[repr(u8)]
 pub enum Packet {
 	#[encde(wire_tag = 0x00)]
 	ConfirmTeleport(ConfirmTeleport),

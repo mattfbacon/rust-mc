@@ -4,6 +4,7 @@ pub mod login;
 pub mod play;
 pub mod status;
 
+pub mod cipher;
 pub mod helpers;
 pub mod varint;
 

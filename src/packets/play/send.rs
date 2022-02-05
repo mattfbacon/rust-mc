@@ -3,7 +3,7 @@ use crate::packets::varint::{VarInt, VarLong};
 use encde::Encode;
 
 #[derive(Encode)]
-struct SpawnEntity {
+pub struct SpawnEntity {
 	entity_id: VarInt,
 	object_uuid: Uuid,
 	/// TODO more specific type
@@ -15,14 +15,14 @@ struct SpawnEntity {
 }
 
 #[derive(Encode)]
-struct SpawnExperienceOrb {
+pub struct SpawnExperienceOrb {
 	entity_id: VarInt,
 	position: F64Position,
 	experience_value: i16,
 }
 
 #[derive(Encode)]
-struct SpawnLivingEntity {
+pub struct SpawnLivingEntity {
 	entity_id: VarInt,
 	entity_uuid: Uuid,
 	entity_type: VarInt,
@@ -33,7 +33,7 @@ struct SpawnLivingEntity {
 }
 
 #[derive(Encode)]
-struct SpawnPainting {
+pub struct SpawnPainting {
 	entity_id: VarInt,
 	entity_uuid: Uuid,
 	name: PaintingName,
@@ -42,7 +42,7 @@ struct SpawnPainting {
 
 /// When a player comes into the visible range of another player
 #[derive(Encode)]
-struct SpawnPlayer {
+pub struct SpawnPlayer {
 	entity_id: VarInt,
 	entity_uuid: Uuid,
 	position: F64Position,
@@ -50,7 +50,7 @@ struct SpawnPlayer {
 }
 
 #[derive(Encode)]
-struct SculkVibrationSignal {
+pub struct SculkVibrationSignal {
 	source_position: PackedPosition,
 	destination: SculkDestination,
 	arrival_ticks: VarInt,
@@ -188,11 +188,6 @@ pub struct PlayNamedSoundEffect {
 	volume: f32,
 	/// 0.5 to 2.0
 	pitch: f32,
-}
-
-#[derive(Encode)]
-pub struct Disconnect {
-	reason: Chat,
 }
 
 #[derive(Encode)]
@@ -806,7 +801,7 @@ pub enum Packet {
 	#[encde(wire_tag = 0x19)]
 	PlayNamedSoundEffect(PlayNamedSoundEffect),
 	#[encde(wire_tag = 0x1a)]
-	Disconnect(Disconnect),
+	Disconnect { reason: Chat },
 	#[encde(wire_tag = 0x1b)]
 	UpdateEntityStatus(UpdateEntityStatus),
 	#[encde(wire_tag = 0x1c)]

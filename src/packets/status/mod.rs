@@ -1,4 +1,2 @@
-mod receive;
-mod send;
-
-pub const STATE_ID: u32 = 1;
+pub mod receive;
+pub mod send;

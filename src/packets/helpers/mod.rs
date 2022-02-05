@@ -1,10 +1,16 @@
+#![allow(dead_code)]
+
 use super::varint::VarInt;
 use bitvec::vec::BitVec;
 use encde::{Decode, Encode, Result as EResult};
 use std::io::{Read, Write};
 
 #[derive(Debug)]
+pub struct PrefixedArray<T, const N: usize>(pub [T; N]);
+#[derive(Debug)]
 pub struct PrefixedBytes(pub Vec<u8>);
+#[derive(Debug)]
+pub struct PrefixedBorrowedBytes<'a>(pub &'a [u8]);
 #[derive(Debug)]
 pub struct PrefixedString(pub String);
 #[derive(Debug)]
@@ -29,17 +35,38 @@ where
 	}
 }
 
+fn encode_usize_as_varint(writer: &mut dyn Write, val: usize) -> EResult<()> {
+	VarInt(val.try_into().map_err(|err| encde::Error::Custom(Box::new(err)))?).encode(writer)
+}
 fn encode_encode_slice<T: Encode>(writer: &mut dyn Write, slice: &[T]) -> EResult<()> {
-	VarInt(slice.len().try_into().map_err(|err| encde::Error::Custom(Box::new(err)))?).encode(writer)?;
+	encode_usize_as_varint(writer, slice.len())?;
 	for item in slice.iter() {
 		item.encode(writer)?;
 	}
 	Ok(())
 }
 fn encode_u8_slice(writer: &mut dyn Write, slice: &[u8]) -> EResult<()> {
-	VarInt(slice.len().try_into().map_err(|err| encde::Error::Custom(Box::new(err)))?).encode(writer)?;
+	encode_usize_as_varint(writer, slice.len())?;
 	writer.write_all(slice)?;
 	Ok(())
+}
+
+impl<T: Encode, const N: usize> Encode for PrefixedArray<T, N> {
+	fn encode(&self, writer: &mut dyn Write) -> EResult<()> {
+		encode_usize_as_varint(writer, N)?;
+		self.0.encode(writer)?;
+		Ok(())
+	}
+}
+
+impl<T: Decode, const N: usize> Decode for PrefixedArray<T, N> {
+	fn decode(reader: &mut dyn Read) -> EResult<Self> {
+		let len = VarInt::decode(reader)?.0.try_into().unwrap();
+		if len != N {
+			return Err(encde::Error::UnexpectedLength { expected: N, actual: len });
+		}
+		Ok(Self(<[T; N]>::decode(reader)?))
+	}
 }
 
 impl Encode for PrefixedString {
@@ -52,9 +79,15 @@ impl Decode for PrefixedString {
 	fn decode(reader: &mut dyn Read) -> EResult<Self> {
 		let len = VarInt::decode(reader)?;
 		let len: usize = len.0.try_into().map_err(|err| encde::Error::Custom(Box::new(err)))?;
-		let mut buffer = Vec::with_capacity(len);
+		let mut buffer = vec![0u8; len];
 		reader.read_exact(&mut buffer)?;
 		Ok(Self(String::from_utf8(buffer).map_err(|err| encde::Error::Custom(Box::new(err)))?))
+	}
+}
+
+impl Encode for PrefixedBorrowedBytes<'_> {
+	fn encode(&self, writer: &mut dyn Write) -> EResult<()> {
+		encode_u8_slice(writer, self.0)
 	}
 }
 
@@ -68,7 +101,7 @@ impl Decode for PrefixedBytes {
 	fn decode(reader: &mut dyn Read) -> EResult<Self> {
 		let len = VarInt::decode(reader)?;
 		let len: usize = len.0.try_into().map_err(|err| encde::Error::Custom(Box::new(err)))?;
-		let mut buffer = Vec::with_capacity(len);
+		let mut buffer = vec![0u8; len];
 		reader.read_exact(&mut buffer)?;
 		Ok(Self(buffer))
 	}
@@ -101,7 +134,7 @@ where
 impl<T: Decode, SizeType> Decode for PrefixedVec<T, SizeType>
 where
 	SizeType: Encode + Decode + TryInto<usize> + 'static,
-	<SizeType as TryInto<usize>>::Error: std::error::Error,
+	<SizeType as TryInto<usize>>::Error: std::error::Error + Send + Sync,
 {
 	fn decode(reader: &mut dyn Read) -> EResult<Self> {
 		let len = SizeType::decode(reader)?;
@@ -145,23 +178,35 @@ impl<T: Decode + bitvec::store::BitStore> Decode for PrefixedBitVec<T> {
 	}
 }
 
-/// TODO more specific and structured type
-pub type Chat = PrefixedString;
+pub mod chat;
+pub use chat::Chat;
 
-pub struct Uuid(u128);
+pub struct Uuid(pub uuid::Uuid);
 
 impl Encode for Uuid {
 	fn encode(&self, writer: &mut dyn Write) -> EResult<()> {
-		writer.write_all(&self.0.to_be_bytes())?;
+		writer.write_all(&self.0.as_u128().to_be_bytes())?;
 		Ok(())
 	}
 }
 
 impl Decode for Uuid {
 	fn decode(reader: &mut dyn Read) -> EResult<Self> {
-		let mut buf = [0u8; (u128::BITS / 8) as usize];
+		let mut buf = [0u8; 16];
 		reader.read_exact(&mut buf)?;
-		Ok(Self(u128::from_be_bytes(buf)))
+		Ok(Self(uuid::Uuid::from_slice(&buf).unwrap()))
+	}
+}
+
+impl std::fmt::Display for Uuid {
+	fn fmt(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+		self.0.to_hyphenated().fmt(formatter)
+	}
+}
+
+impl serde::Serialize for Uuid {
+	fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+		serializer.serialize_str(&self.to_string())
 	}
 }
 
@@ -453,7 +498,7 @@ pub enum ClientChatMode {
 	Hidden = 2,
 }
 
-#[derive(Encode, Decode)]
+#[derive(Encode)]
 pub struct TabCompletion {
 	text: PrefixedString,
 	tooltip: PrefixedOption<Chat>,
@@ -644,7 +689,7 @@ pub enum OptionalGameMode {
 	Spectator = 3,
 }
 
-#[derive(Encode, Decode)]
+#[derive(Encode)]
 pub struct MapIcon {
 	icon_type: MapIconType,
 	position: ChunkPosition<i8>,
@@ -1229,4 +1274,13 @@ pub enum StructureBlockRotation {
 	Clockwise90 = 1,
 	Clockwise180 = 2,
 	Counterclockwise90 = 3,
+}
+
+pub struct Json<T>(pub T);
+
+impl<T: serde::Serialize> Encode for Json<T> {
+	fn encode(&self, writer: &mut dyn Write) -> EResult<()> {
+		let encoded = serde_json::to_string(&self.0).map_err(|err| encde::Error::Custom(Box::new(err)))?;
+		PrefixedString(encoded).encode(writer)
+	}
 }
