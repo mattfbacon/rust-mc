@@ -32,7 +32,7 @@ impl Server {
 		info!("Listening on {}:{}", self.config.address, self.config.port);
 		loop {
 			let (socket, client_address) = listener.accept()?;
-			let client = Client::new(socket, client_address, &self.config, &self.global_state);
+			let client = Client::new(socket, client_address, self.config, self.global_state);
 			std::thread::Builder::new().name(client_address.to_string()).spawn(move || {
 				if let Err(err) = client.handle() {
 					log::error!("{:#}", err);
@@ -53,10 +53,8 @@ impl GlobalState {
 		debug!("Generating RSA key");
 		let rsa_key = rsa::RsaPrivateKey::new(&mut rand::thread_rng(), 1024)?;
 		debug!("Finished generating RSA key");
-		Ok(Self {
-			rsa_public_der: rsa_key.to_pkcs1_der()?.as_der().to_vec(),
-			rsa_key,
-		})
+		let rsa_public_der = rsa_key.to_pkcs1_der()?.as_der().to_vec();
+		Ok(Self { rsa_public_der, rsa_key })
 	}
 }
 
@@ -94,9 +92,7 @@ impl Client {
 		Self { socket, address, config, global_state }
 	}
 	pub fn handle(mut self) -> anyhow::Result<()> {
-		let handshake = match self.receive_packet()?.ok_or_else(|| anyhow::anyhow!("Client closed connection").context("Handshake"))? {
-			HandshakeReceive::Handshake(handshake) => handshake,
-		};
+		let HandshakeReceive::Handshake(handshake) = self.receive_packet()?.ok_or_else(|| anyhow::anyhow!("Client closed connection").context("Handshake"))?;
 		trace!("Client handshake: {:?}", handshake);
 		match handshake.next_state {
 			ProtocolState::Login => {

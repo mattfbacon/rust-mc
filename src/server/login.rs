@@ -31,13 +31,13 @@ fn deserialize_skin_texture<'de, D: Deserializer<'de>>(deserializer: D) -> Resul
 			while let Some(property) = access.next_element::<Property>()? {
 				if property.name == "textures" {
 					// TODO check signature; I can't find the Yggdrasil public key anywhere
-					return Ok(base64::decode(property.value).map_err(|err| S::Error::custom(err.to_string()))?);
+					return base64::decode(property.value).map_err(|err| S::Error::custom(err.to_string()));
 				}
 			}
 			Err(S::Error::custom("No `textures` property present"))
 		}
 	}
-	Ok(deserializer.deserialize_seq(Visitor)?)
+	deserializer.deserialize_seq(Visitor)
 }
 
 #[derive(Deserialize)]
@@ -125,7 +125,7 @@ impl Client {
 		} = self.receive_encryption_response()?;
 		debug!("Received encryption response");
 		let decrypted_verify_token = self.global_state.rsa_key.decrypt(rsa::PaddingScheme::PKCS1v15Encrypt, &encrypted_verify_token)?;
-		anyhow::ensure!(&verify_token == decrypted_verify_token.as_slice(), "Verify token does not match");
+		anyhow::ensure!(verify_token == decrypted_verify_token.as_slice(), "Verify token does not match");
 		Ok(self.global_state.rsa_key.decrypt(rsa::PaddingScheme::PKCS1v15Encrypt, &encrypted_shared_secret)?)
 	}
 	fn make_cipher(shared_secret: &[u8]) -> anyhow::Result<Cipher> {

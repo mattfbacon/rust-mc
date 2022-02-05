@@ -2,7 +2,7 @@ use crate::config::{LoggingConfig, LoggingSink};
 use log4rs::append::{console::ConsoleAppender, file::FileAppender};
 use log4rs::config::Appender;
 
-pub fn init(config: &Vec<LoggingConfig>) -> anyhow::Result<log4rs::Handle> {
+pub fn init(config: &[LoggingConfig]) -> anyhow::Result<log4rs::Handle> {
 	let (setup, names) = config.iter().fold(Ok((log4rs::config::Config::builder(), Vec::new())), move |acc: anyhow::Result<_>, sink| {
 		let (setup, mut names) = acc?;
 		let (name, appender, level) = appender_for_sink(sink)?;
