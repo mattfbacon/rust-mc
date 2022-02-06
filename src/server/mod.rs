@@ -57,16 +57,17 @@ impl GlobalState {
 	}
 }
 
-struct ClientTpl<T> {
-	socket: T,
+trait ClientSocket: Read + Write + Send {}
+impl<T: Read + Write + Send> ClientSocket for T {}
+
+struct Client {
+	socket: Box<dyn ClientSocket>,
 	address: SocketAddr,
 	config: &'static Config,
 	global_state: &'static GlobalState,
 }
-type Client = ClientTpl<TcpStream>;
-type EncryptedClient = ClientTpl<crate::packets::cipher::CipherWrapper<TcpStream>>;
 
-impl<T: Read + Write> ClientTpl<T> {
+impl Client {
 	fn receive_packet<P: DecodeSized>(&mut self) -> encde::Result<Option<P>> {
 		let packet_len = match VarInt::decode(&mut self.socket) {
 			Ok(VarInt(packet_len)) => packet_len.try_into().map_err(|err| encde::Error::Custom(Box::new(err)))?,
@@ -88,7 +89,12 @@ impl<T: Read + Write> ClientTpl<T> {
 impl Client {
 	pub fn new(socket: TcpStream, address: SocketAddr, config: &'static crate::config::Config, global_state: &'static GlobalState) -> Self {
 		trace!("New connection from {}", &address);
-		Self { socket, address, config, global_state }
+		Self {
+			socket: Box::new(socket),
+			address,
+			config,
+			global_state,
+		}
 	}
 	pub fn handle(mut self) -> anyhow::Result<()> {
 		let HandshakeReceive::Handshake(handshake) = self.receive_packet()?.ok_or_else(|| anyhow::anyhow!("Client closed connection").context("Handshake"))?;

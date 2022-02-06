@@ -1,6 +1,6 @@
-use super::{Client, EncryptedClient};
+use super::Client;
 use crate::packets::cipher::{Cipher, CipherWrapper};
-use crate::packets::helpers::{PrefixedArray, PrefixedBorrowedBytes, PrefixedBytes, PrefixedString};
+use crate::packets::helpers::{PrefixedArray, PrefixedBorrowedBytes, PrefixedBytes, PrefixedString, Uuid as UuidWrapper};
 use crate::packets::login::receive::{self, Packet as Receive};
 use crate::packets::login::send::Packet as Send;
 use log::{debug, trace};
@@ -115,7 +115,7 @@ impl Client {
 		}
 	}
 	fn request_encryption(&mut self) -> anyhow::Result<[u8; 4]> {
-		debug!("Requesting encryption");
+		trace!("Requesting encryption");
 		let verify_token = rand::random();
 		self.send_packet(&Send::Encryption {
 			server_id: PrefixedString(String::new()),
@@ -125,12 +125,11 @@ impl Client {
 		Ok(verify_token)
 	}
 	fn receive_shared_secret(&mut self, verify_token: [u8; 4]) -> anyhow::Result<Vec<u8>> {
-		debug!("Receiving encryption response");
 		let receive::Encryption {
 			shared_secret: PrefixedBytes(encrypted_shared_secret),
 			verify_token: PrefixedBytes(encrypted_verify_token),
 		} = self.receive_encryption_response()?;
-		debug!("Received encryption response");
+		trace!("Received encryption response");
 		let decrypted_verify_token = rsa_private_decrypt(&self.global_state.rsa_key, &encrypted_verify_token)?;
 		anyhow::ensure!(verify_token == decrypted_verify_token.as_slice(), "Verify token does not match");
 		Ok(rsa_private_decrypt(&self.global_state.rsa_key, &encrypted_shared_secret)?)
@@ -142,7 +141,7 @@ impl Client {
 	fn get_session(&mut self, username: String, shared_secret: &[u8]) -> anyhow::Result<SessionResponse> {
 		let mut auth_hash = sha::sha1::Sha1::default().digest(b"").digest(shared_secret).digest(&self.global_state.rsa_public_der).to_bytes();
 		let auth_hash = format_minecraft_sha1(&mut auth_hash);
-		debug!("Making request to session server");
+		trace!("Making request to session server");
 		let response = reqwest::blocking::get(reqwest::Url::parse_with_params(
 			"https://sessionserver.mojang.com/session/minecraft/hasJoined",
 			&[("username", username.as_str()), ("serverId", auth_hash.as_str())],
@@ -150,6 +149,7 @@ impl Client {
 		.error_for_status()?;
 		// This is a bit of a kludge, but we have to handle the No Content response somehow
 		if response.status() == reqwest::StatusCode::NO_CONTENT {
+			trace!("Session server returned No Content; using other endpoints to synthesize the data");
 			#[derive(Deserialize)]
 			struct UuidForUsernameResponse {
 				// there is also the "name" field but we can ignore it
@@ -163,6 +163,15 @@ impl Client {
 			Ok(response.json()?)
 		}
 	}
+	fn enter_play(mut self, session: super::login::SessionResponse) -> anyhow::Result<()> {
+		trace!("Sending login success packet");
+		let packet = crate::packets::login::send::Packet::LoginSuccess {
+			uuid: UuidWrapper(session.uuid),
+			username: PrefixedString(session.username),
+		};
+		self.send_packet(&packet)?;
+		self.handle_play()
+	}
 
 	pub(super) fn handle_login(mut self) -> anyhow::Result<()> {
 		trace!("Entering login state");
@@ -172,13 +181,7 @@ impl Client {
 		let shared_secret = self.receive_shared_secret(verify_token)?;
 		let session_response = self.get_session(username, &shared_secret)?;
 		let cipher = Self::make_cipher(&shared_secret)?;
-		let wrapper = CipherWrapper::new(self.socket, cipher);
-		EncryptedClient {
-			socket: wrapper,
-			address: self.address,
-			config: self.config,
-			global_state: self.global_state,
-		}
-		.enter_play(session_response)
+		self.socket = Box::new(CipherWrapper::new(self.socket, cipher));
+		self.enter_play(session_response)
 	}
 }
