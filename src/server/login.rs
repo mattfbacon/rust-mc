@@ -71,8 +71,10 @@ fn format_minecraft_sha1(mut data: &mut [u8]) -> String {
 	}
 	let first_nonzero = data.iter().position(|&x| x != 0).unwrap_or(data.len());
 	data = &mut data[first_nonzero..];
+	// PANICS: this is guaranteed not to return Err
 	write!(ret, "{:x}", data[0]).unwrap();
 	for byte in data.iter().skip(1) {
+		// PANICS: ditto
 		write!(ret, "{:02x}", byte).unwrap();
 	}
 	ret

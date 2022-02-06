@@ -61,7 +61,7 @@ impl<T: Encode, const N: usize> Encode for PrefixedArray<T, N> {
 
 impl<T: Decode, const N: usize> Decode for PrefixedArray<T, N> {
 	fn decode(reader: &mut dyn Read) -> EResult<Self> {
-		let len = VarInt::decode(reader)?.0.try_into().unwrap();
+		let len = VarInt::decode(reader)?.0.try_into().map_err(|err| encde::Error::Custom(Box::new(err)))?;
 		if len != N {
 			return Err(encde::Error::UnexpectedLength { expected: N, actual: len });
 		}
@@ -192,8 +192,9 @@ impl Encode for Uuid {
 
 impl Decode for Uuid {
 	fn decode(reader: &mut dyn Read) -> EResult<Self> {
-		let mut buf = [0u8; 16];
+		let mut buf: uuid::Bytes = [0u8; 16];
 		reader.read_exact(&mut buf)?;
+		// PANICS: from_slice only panics if the buffer is the wrong length and we used the type from the `uuid` crate directly to ensure the correct size.
 		Ok(Self(uuid::Uuid::from_slice(&buf).unwrap()))
 	}
 }
@@ -1106,6 +1107,7 @@ impl Encode for Recipe {
 				width.encode(writer)?;
 				height.encode(writer)?;
 				group.encode(writer)?;
+				// PANICS: this state is invalid and should not have occurred in the first place
 				assert_eq!(ingredients.len(), usize::try_from(width.0).unwrap() * usize::try_from(height.0).unwrap());
 				for item in ingredients.iter() {
 					item.encode(writer)?;

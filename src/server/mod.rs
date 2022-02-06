@@ -80,7 +80,7 @@ impl Client {
 	}
 	fn send_packet<P: Encode>(&mut self, data: &P) -> encde::Result<()> {
 		let packet_data = encde::util::encode_to_vec(data)?;
-		VarInt(packet_data.len().try_into().unwrap()).encode(&mut self.socket)?;
+		VarInt(packet_data.len().try_into().map_err(|err| encde::Error::Custom(Box::new(err)))?).encode(&mut self.socket)?;
 		self.socket.write_all(&packet_data)?;
 		Ok(())
 	}
