@@ -14,7 +14,7 @@ fn deserialize_skin_texture<'de, D: Deserializer<'de>>(deserializer: D) -> Resul
 	struct Property {
 		name: String,
 		value: String,
-		signature: String,
+		signature: Option<String>,
 	}
 
 	struct Visitor;
@@ -92,6 +92,13 @@ mod test {
 	}
 }
 
+fn rsa_private_decrypt(key: &openssl::rsa::RsaRef<openssl::pkey::Private>, data: &[u8]) -> anyhow::Result<Vec<u8>> {
+	let mut buf = vec![0u8; key.size() as usize];
+	let size = key.private_decrypt(data, &mut buf, openssl::rsa::Padding::PKCS1)?;
+	buf.truncate(size);
+	Ok(buf)
+}
+
 impl Client {
 	fn receive_login_start(&mut self) -> anyhow::Result<String> {
 		match self.receive_packet()? {
@@ -124,23 +131,37 @@ impl Client {
 			verify_token: PrefixedBytes(encrypted_verify_token),
 		} = self.receive_encryption_response()?;
 		debug!("Received encryption response");
-		let decrypted_verify_token = self.global_state.rsa_key.decrypt(rsa::PaddingScheme::PKCS1v15Encrypt, &encrypted_verify_token)?;
+		let decrypted_verify_token = rsa_private_decrypt(&self.global_state.rsa_key, &encrypted_verify_token)?;
 		anyhow::ensure!(verify_token == decrypted_verify_token.as_slice(), "Verify token does not match");
-		Ok(self.global_state.rsa_key.decrypt(rsa::PaddingScheme::PKCS1v15Encrypt, &encrypted_shared_secret)?)
+		Ok(rsa_private_decrypt(&self.global_state.rsa_key, &encrypted_shared_secret)?)
 	}
 	fn make_cipher(shared_secret: &[u8]) -> anyhow::Result<Cipher> {
 		use cfb8::cipher::NewCipher;
 		Ok(Cipher::new_from_slices(shared_secret, shared_secret)?)
 	}
 	fn get_session(&mut self, username: String, shared_secret: &[u8]) -> anyhow::Result<SessionResponse> {
-		let mut auth_hash = sha::sha1::Sha1::default().digest(shared_secret).digest(&self.global_state.rsa_public_der).to_bytes();
+		let mut auth_hash = sha::sha1::Sha1::default().digest(b"").digest(shared_secret).digest(&self.global_state.rsa_public_der).to_bytes();
 		let auth_hash = format_minecraft_sha1(&mut auth_hash);
 		debug!("Making request to session server");
-		Ok(reqwest::blocking::get(reqwest::Url::parse_with_params(
+		let response = reqwest::blocking::get(reqwest::Url::parse_with_params(
 			"https://sessionserver.mojang.com/session/minecraft/hasJoined",
-			&[("username", username), ("serverId", auth_hash), ("ip", self.address.to_string())],
+			&[("username", username.as_str()), ("serverId", auth_hash.as_str())],
 		)?)?
-		.json()?)
+		.error_for_status()?;
+		// This is a bit of a kludge, but we have to handle the No Content response somehow
+		if response.status() == reqwest::StatusCode::NO_CONTENT {
+			#[derive(Deserialize)]
+			struct UuidForUsernameResponse {
+				// there is also the "name" field but we can ignore it
+				#[serde(rename = "id")]
+				uuid: uuid::Uuid,
+			}
+			let uuid: UuidForUsernameResponse = reqwest::blocking::get(format!("https://api.mojang.com/users/profiles/minecraft/{}", username))?.error_for_status()?.json()?;
+			let uuid = uuid.uuid;
+			Ok(reqwest::blocking::get(format!("https://sessionserver.mojang.com/session/minecraft/profile/{}", uuid))?.error_for_status()?.json()?)
+		} else {
+			Ok(response.json()?)
+		}
 	}
 
 	pub(super) fn handle_login(mut self) -> anyhow::Result<()> {

@@ -43,17 +43,16 @@ impl Server {
 }
 
 struct GlobalState {
-	rsa_key: rsa::RsaPrivateKey,
+	rsa_key: openssl::rsa::Rsa<openssl::pkey::Private>,
 	rsa_public_der: Vec<u8>,
 }
 
 impl GlobalState {
 	fn new() -> anyhow::Result<Self> {
-		use rsa::pkcs1::ToRsaPublicKey;
 		debug!("Generating RSA key");
-		let rsa_key = rsa::RsaPrivateKey::new(&mut rand::thread_rng(), 1024)?;
+		let rsa_key = openssl::rsa::Rsa::generate(1024)?;
 		debug!("Finished generating RSA key");
-		let rsa_public_der = rsa_key.to_pkcs1_der()?.as_der().to_vec();
+		let rsa_public_der = rsa_key.public_key_to_der()?;
 		Ok(Self { rsa_public_der, rsa_key })
 	}
 }
