@@ -62,7 +62,6 @@ impl<T: Read + Write + Send> ClientSocket for T {}
 
 struct Client {
 	socket: Box<dyn ClientSocket>,
-	address: SocketAddr,
 	config: &'static Config,
 	global_state: &'static GlobalState,
 }
@@ -91,7 +90,6 @@ impl Client {
 		trace!("New connection from {}", &address);
 		Self {
 			socket: Box::new(socket),
-			address,
 			config,
 			global_state,
 		}

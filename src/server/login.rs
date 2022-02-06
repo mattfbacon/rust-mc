@@ -179,6 +179,7 @@ impl Client {
 		trace!("Entering login state");
 		let username = self.receive_login_start()?;
 		trace!("Connection username: {}", username);
+		// TODO offline mode
 		let verify_token = self.request_encryption()?;
 		let shared_secret = self.receive_shared_secret(verify_token)?;
 		let session_response = self.get_session(username, &shared_secret)?;
