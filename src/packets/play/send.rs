@@ -85,7 +85,7 @@ pub struct BlockBreakAnimation {
 pub struct UpdateBlockEntityData {
 	block_location: PackedPosition,
 	tag_type: VarInt,
-	nbt_data: NbtData,
+	nbt_data: NbtBlob,
 }
 
 /// AKA "Block Action"
@@ -280,8 +280,8 @@ pub struct JoinGame {
 	new_game_mode: GameMode,
 	old_game_mode: OptionalGameMode,
 	dimension_names: PrefixedVec<PrefixedString>,
-	dimension_codec: NbtData,
-	dimension_data: NbtData,
+	dimension_codec: NbtData<DimensionCodec>,
+	dimension_data: NbtData<DimensionType>,
 	current_dimension: PrefixedString,
 	hashed_seed: i64,
 	max_players: VarInt,
@@ -488,7 +488,7 @@ pub struct RemoveEntityEffect {
 
 #[derive(Encode)]
 pub struct RespawnPlayer {
-	dimension_data: NbtData,
+	dimension_data: NbtData<DimensionType>,
 	dimension_name: PrefixedString,
 	hashed_seed: i64,
 	new_gamemode: GameMode,
@@ -704,7 +704,7 @@ pub struct UpdatePlayerListDecoration {
 #[derive(Encode)]
 pub struct NbtQueryResponse {
 	transaction_id: VarInt,
-	data: NbtData,
+	data: NbtBlob,
 }
 
 #[derive(Encode)]

@@ -3,6 +3,7 @@
 use super::varint::VarInt;
 use bitvec::vec::BitVec;
 use encde::{Decode, Encode, Result as EResult};
+use serde::{Deserialize, Serialize};
 use std::io::{Read, Write};
 
 #[derive(Debug)]
@@ -205,7 +206,7 @@ impl std::fmt::Display for Uuid {
 	}
 }
 
-impl serde::Serialize for Uuid {
+impl Serialize for Uuid {
 	fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
 		serializer.serialize_str(&self.to_string())
 	}
@@ -403,17 +404,30 @@ impl Decode for DestroyStage {
 	}
 }
 
-pub struct NbtData(pub nbt::Blob);
+pub struct NbtData<T>(pub T);
+pub struct NbtBlob(nbt::Blob);
 
-impl Encode for NbtData {
+impl Encode for NbtBlob {
 	fn encode(&self, mut writer: &mut dyn Write) -> EResult<()> {
 		self.0.to_writer(&mut writer).map_err(|err| encde::Error::Custom(Box::new(err)))
 	}
 }
 
-impl Decode for NbtData {
+impl Decode for NbtBlob {
 	fn decode(mut reader: &mut dyn Read) -> EResult<Self> {
 		Ok(Self(nbt::Blob::from_reader(&mut reader).map_err(|err| encde::Error::Custom(Box::new(err)))?))
+	}
+}
+
+impl<T: Serialize> Encode for NbtData<T> {
+	fn encode(&self, mut writer: &mut dyn Write) -> EResult<()> {
+		nbt::to_writer(writer, &self.0, None).map_err(|err| encde::Error::Custom(Box::new(err)))
+	}
+}
+
+impl<T: serde::de::DeserializeOwned> Decode for NbtData<T> {
+	fn decode(mut reader: &mut dyn Read) -> EResult<Self> {
+		Ok(Self(nbt::from_reader(reader).map_err(|err| encde::Error::Custom(Box::new(err)))?))
 	}
 }
 
@@ -517,7 +531,7 @@ pub struct IndexedSlot {
 pub struct PresentSlot {
 	item_id: VarInt,
 	count: i8,
-	nbt_data: NbtData,
+	nbt_data: NbtBlob,
 }
 
 #[derive(Encode, Decode)]
@@ -1280,9 +1294,154 @@ pub enum StructureBlockRotation {
 
 pub struct Json<T>(pub T);
 
-impl<T: serde::Serialize> Encode for Json<T> {
+impl<T: Serialize> Encode for Json<T> {
 	fn encode(&self, writer: &mut dyn Write) -> EResult<()> {
 		let encoded = serde_json::to_string(&self.0).map_err(|err| encde::Error::Custom(Box::new(err)))?;
 		PrefixedString(encoded).encode(writer)
 	}
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct DimensionCodec {
+	#[serde(rename = "minecraft:dimension_type")]
+	dimension_types: DimensionTypeRegistry,
+	#[serde(rename = "minecraft:worldgen/biome")]
+	biomes: BiomeRegistry,
+}
+
+pub struct DimensionTypeRegistry(Vec<DimensionTypeEntry>);
+
+#[derive(Serialize, Deserialize)]
+struct DimensionTypeRegistryWire<'a> {
+	#[serde(rename = "type")]
+	ty: &'a str,
+	value: Vec<DimensionTypeEntry>,
+}
+impl Serialize for DimensionTypeRegistry {
+	fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+		DimensionTypeRegistryWire { ty: "minecraft:dimension_type", value: self.0 }.serialize(serializer)
+	}
+}
+impl<'de> Deserialize<'de> for DimensionTypeRegistry {
+	fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+		Ok(Self(DimensionTypeRegistryWire::deserialize(deserializer)?.value))
+	}
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct DimensionTypeEntry {
+	name: String,
+	id: i32,
+	element: DimensionType,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct DimensionType {
+	piglin_safe: bool,
+	natural: bool,
+	ambient_light: f32,
+	fixed_time: Option<i64>,
+	#[serde(rename = "infiniburn")]
+	infinite_burn: String,
+	respawn_anchor_works: bool,
+	has_skylight: bool,
+	bed_works: bool,
+	#[serde(rename = "effects")]
+	dimension_name: String,
+	has_raids: bool,
+	min_y: i32,
+	height: i32,
+	logical_height: i32,
+	coordinate_scale: f32,
+	#[serde(rename = "ultrawarm")]
+	ultra_warm: bool,
+	has_ceiling: bool,
+}
+
+pub struct BiomeRegistry(Vec<BiomeRegistryEntry>);
+
+#[derive(Serialize, Deserialize)]
+struct BiomeRegistryWire<'a> {
+	#[serde(rename = "type")]
+	ty: &'a str,
+	value: Vec<BiomeRegistryEntry>,
+}
+impl Serialize for BiomeRegistry {
+	fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+		BiomeRegistryWire { ty: "minecraft:worldgen/biome", value: self.0 }.serialize(serializer)
+	}
+}
+impl<'de> Deserialize<'de> for BiomeRegistry {
+	fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+		Ok(Self(BiomeRegistryWire::deserialize(deserializer)?.value))
+	}
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct BiomeRegistryEntry {
+	name: String,
+	id: i32,
+	element: BiomeProperties,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct BiomeProperties {
+	precipitation: String,
+	depth: f32,
+	temperature: f32,
+	scale: f32,
+	downfall: f32,
+	category: String,
+	temperature_modifier: Option<String>,
+	effects: BiomeEffects,
+	particle: Option<BiomeParticle>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct BiomeEffects {
+	sky_color: i32,
+	water_fog_color: i32,
+	fog_color: i32,
+	water_color: i32,
+	foliage_color: Option<i32>,
+	grass_color: Option<i32>,
+	grass_color_modifier: Option<String>,
+	music: Option<BiomeMusic>,
+	ambient_sound: Option<String>,
+	additions_sound: Option<BiomeAdditionsSound>,
+	mood_sound: Option<BiomeMoodSound>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct BiomeMusic {
+	replace_current_music: bool,
+	sound: String,
+	max_delay: i32,
+	min_delay: i32,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct BiomeAdditionsSound {
+	sound: String,
+	tick_chance: f64,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct BiomeMoodSound {
+	sound: String,
+	tick_delay: i32,
+	offset: f64,
+	block_search_extent: i32,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct BiomeParticle {
+	probability: f32,
+	options: BiomeParticleOptions,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct BiomeParticleOptions {
+	#[serde(rename = "type")]
+	ty: String,
 }
