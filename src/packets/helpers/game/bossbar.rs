@@ -1,3 +1,6 @@
+use super::chat::Chat;
+use encde::{Decode, Encode};
+
 #[derive(Encode)]
 #[repr(u8)]
 pub enum BossBarUpdateType {

@@ -1,4 +1,4 @@
-use crate::packets::helpers::{Json, Uuid};
+use crate::packets::helpers::wrappers::{json::Json, uuid::Uuid};
 use encde::Encode;
 use serde::Serialize;
 

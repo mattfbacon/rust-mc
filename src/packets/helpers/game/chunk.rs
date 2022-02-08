@@ -1,3 +1,11 @@
+use super::super::position::UnpackedPosition;
+use super::super::varint::VarLong;
+use super::super::wrappers::{bitvec::PrefixedBitVec, std::*};
+use bitvec::vec::BitVec;
+use encde::{Decode, Encode, Result as EResult};
+use serde::{Deserialize, Serialize};
+use std::io::{Read, Write};
+
 #[derive(Encode, Decode)]
 pub struct LightUpdateCommon {
 	trust_edges: bool,
@@ -52,6 +60,6 @@ pub struct MultiBlockChangeEntry {
 impl Encode for MultiBlockChangeEntry {
 	fn encode(&self, writer: &mut dyn Write) -> EResult<()> {
 		let encoded: u64 = ((self.new_block_state as u64) << 12) | ((self.relative_position.x as u64) << 8) | ((self.relative_position.z as u64) << 4) | (self.relative_position.y as u64);
-		super::varint::VarLong(encoded as i64).encode(writer)
+		VarLong(encoded as i64).encode(writer)
 	}
 }

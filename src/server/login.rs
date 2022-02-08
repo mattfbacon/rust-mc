@@ -1,6 +1,7 @@
 use super::Client;
 use crate::packets::cipher::{Cipher, CipherWrapper};
-use crate::packets::helpers::{PrefixedArray, PrefixedBorrowedBytes, PrefixedBytes, PrefixedString, Uuid as UuidWrapper};
+use crate::packets::helpers::wrappers::std::{PrefixedArray, PrefixedBorrowedBytes, PrefixedBytes, PrefixedString};
+use crate::packets::helpers::wrappers::uuid::Uuid as UuidWrapper;
 use crate::packets::login::receive::{self, Packet as Receive};
 use crate::packets::login::send::Packet as Send;
 use log::{debug, trace};

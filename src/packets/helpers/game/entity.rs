@@ -1,3 +1,10 @@
+use super::super::wrappers::{std::*, uuid::Uuid};
+use super::slot::Slot;
+use bitvec::vec::BitVec;
+use encde::{Decode, Encode, Result as EResult};
+use serde::{Deserialize, Serialize};
+use std::io::{Read, Write};
+
 // TODO implement
 // #[derive(Encode)]
 pub struct EntityMetadata(());

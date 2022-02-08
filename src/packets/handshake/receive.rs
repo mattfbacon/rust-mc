@@ -1,5 +1,5 @@
-use crate::packets::helpers::PrefixedString;
-use crate::packets::varint::VarInt;
+use crate::packets::helpers::varint::VarInt;
+use crate::packets::helpers::wrappers::std::PrefixedString;
 use encde::Decode;
 
 #[derive(Decode, Debug)]

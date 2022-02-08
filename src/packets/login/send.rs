@@ -1,5 +1,7 @@
-use crate::packets::helpers::{Chat, PrefixedArray, PrefixedBorrowedBytes, PrefixedString, Uuid};
-use crate::packets::varint::VarInt;
+use crate::packets::helpers::game::chat::Chat;
+use crate::packets::helpers::varint::VarInt;
+use crate::packets::helpers::wrappers::std::{PrefixedArray, PrefixedBorrowedBytes, PrefixedString};
+use crate::packets::helpers::wrappers::uuid::Uuid;
 use encde::Encode;
 
 /// This packet is optional and not sending it means to not compress.

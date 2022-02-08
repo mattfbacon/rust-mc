@@ -1,3 +1,11 @@
+use super::super::wrappers::std::{PrefixedOption, PrefixedVec};
+use super::chat::Chat;
+use super::chunk::ChunkPosition;
+use bitvec::vec::BitVec;
+use encde::{Decode, Encode, Result as EResult};
+use serde::{Deserialize, Serialize};
+use std::io::{Read, Write};
+
 #[derive(Encode)]
 pub struct MapIcon {
 	icon_type: MapIconType,

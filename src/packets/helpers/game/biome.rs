@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 pub struct BiomeRegistry(Vec<BiomeRegistryEntry>);
 
 #[derive(Serialize, Deserialize)]

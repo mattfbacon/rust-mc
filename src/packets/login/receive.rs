@@ -1,4 +1,4 @@
-use crate::packets::helpers::{PrefixedBytes, PrefixedString};
+use crate::packets::helpers::wrappers::std::{PrefixedBytes, PrefixedString};
 use encde::Decode;
 
 #[derive(Decode, Debug)]

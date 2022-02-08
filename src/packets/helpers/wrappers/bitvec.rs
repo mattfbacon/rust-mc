@@ -1,3 +1,11 @@
+use super::super::varint::VarInt;
+use super::super::wrappers::std::PrefixedVec;
+use super::super::wrappers::util::encode_encode_slice;
+use bitvec::vec::BitVec;
+use encde::{Decode, Encode, Result as EResult};
+use serde::{Deserialize, Serialize};
+use std::io::{Read, Write};
+
 #[derive(Debug)]
 pub struct PrefixedBitVec<T: bitvec::store::BitStore = u64>(pub BitVec<T>);
 

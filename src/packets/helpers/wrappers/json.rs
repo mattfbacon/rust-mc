@@ -1,3 +1,9 @@
+use super::super::wrappers::std::PrefixedString;
+use bitvec::vec::BitVec;
+use encde::{Decode, Encode, Result as EResult};
+use serde::{de::DeserializeOwned, Serialize};
+use std::io::{Read, Write};
+
 pub struct Json<T>(pub T);
 
 impl<T: Serialize> Encode for Json<T> {
@@ -7,7 +13,7 @@ impl<T: Serialize> Encode for Json<T> {
 	}
 }
 
-impl<T: Deserialize> Decode for Json<T> {
+impl<T: DeserializeOwned> Decode for Json<T> {
 	fn decode(reader: &mut dyn Read) -> EResult<Self> {
 		Ok(Self(serde_json::from_reader(reader).map_err(|err| encde::Error::Custom(Box::new(err)))?))
 	}

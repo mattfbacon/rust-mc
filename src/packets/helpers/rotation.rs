@@ -1,3 +1,5 @@
+use encde::{Decode, Encode};
+
 /// The angle is encoded in 256th-turns
 #[derive(Encode, Decode)]
 pub struct Angle(u8);

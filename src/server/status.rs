@@ -1,5 +1,5 @@
 use super::Client;
-use crate::packets::helpers::Json;
+use crate::packets::helpers::wrappers::json::Json;
 use crate::packets::status::receive::Packet as Receive;
 use crate::packets::status::send::{self, Packet as Send};
 use log::trace;

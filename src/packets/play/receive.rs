@@ -1,6 +1,8 @@
-use crate::packets::helpers::*;
-use crate::packets::varint::{VarInt, VarLong};
+use crate::packets::helpers;
 use encde::Decode;
+use helpers::varint::*;
+use helpers::varint::{VarInt, VarLong};
+use helpers::wrappers::std::*;
 
 #[derive(Decode)]
 pub struct ConfirmTeleport {

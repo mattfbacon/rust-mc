@@ -1,3 +1,10 @@
+use bitvec::vec::BitVec;
+use encde::{Decode, Encode, Result as EResult};
+use serde::{Deserialize, Serialize};
+use std::io::{Read, Write};
+
+use super::biome::BiomeRegistry;
+
 #[derive(Serialize, Deserialize)]
 pub struct DimensionCodec {
 	#[serde(rename = "minecraft:dimension_type")]

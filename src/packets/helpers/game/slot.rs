@@ -1,3 +1,7 @@
+use super::super::varint::VarInt;
+use super::super::wrappers::{nbt::NbtBlob, std::PrefixedOption};
+use encde::{Decode, Encode};
+
 pub type Slot = PrefixedOption<PresentSlot>;
 
 #[derive(Encode, Decode)]

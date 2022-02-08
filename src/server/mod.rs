@@ -1,6 +1,6 @@
 use crate::config::Config;
 use crate::packets::handshake::receive::Packet as HandshakeReceive;
-use crate::packets::varint::VarInt;
+use crate::packets::helpers::varint::VarInt;
 use crate::packets::ProtocolState;
 use encde::{Decode, DecodeSized, Encode};
 use log::{debug, info, trace};

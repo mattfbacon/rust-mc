@@ -1,3 +1,7 @@
+use super::varint::VarInt;
+use encde::{Decode, Encode, Result as EResult};
+use std::io::{Read, Write};
+
 pub struct Milliseconds(std::time::Duration);
 
 impl Encode for Milliseconds {

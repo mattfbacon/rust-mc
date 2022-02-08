@@ -1,5 +1,4 @@
-use crate::packets::helpers::*;
-use crate::packets::varint::{VarInt, VarLong};
+use crate::packets::helpers::varint::*;
 use encde::Encode;
 
 #[derive(Encode)]
