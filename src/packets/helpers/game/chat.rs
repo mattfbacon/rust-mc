@@ -1,10 +1,7 @@
-use super::super::wrappers::std::{PrefixedOption, PrefixedString};
-use bitvec::vec::BitVec;
-use encde::{Decode, Encode, Result as EResult};
-use serde::{Deserialize, Serialize};
-use std::io::{Read, Write};
-
 use super::super::wrappers::json::Json;
+use super::super::wrappers::std::{PrefixedOption, PrefixedString};
+use encde::{Decode, Encode};
+use serde::Serialize;
 
 pub type Chat = Json<Content>;
 

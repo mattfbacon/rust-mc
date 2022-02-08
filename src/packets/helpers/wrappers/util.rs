@@ -1,8 +1,6 @@
 use super::super::varint::VarInt;
-use bitvec::vec::BitVec;
-use encde::{Decode, Encode, Result as EResult};
-use serde::{Deserialize, Serialize};
-use std::io::{Read, Write};
+use encde::{Encode, Result as EResult};
+use std::io::Write;
 
 pub fn encode_usize_as_varint(writer: &mut dyn Write, val: usize) -> EResult<()> {
 	VarInt(val.try_into().map_err(|err| encde::Error::Custom(Box::new(err)))?).encode(writer)

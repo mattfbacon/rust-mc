@@ -1,5 +1,4 @@
 use super::super::wrappers::std::PrefixedString;
-use bitvec::vec::BitVec;
 use encde::{Decode, Encode, Result as EResult};
 use serde::{de::DeserializeOwned, Serialize};
 use std::io::{Read, Write};

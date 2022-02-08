@@ -1,6 +1,5 @@
-use bitvec::vec::BitVec;
 use encde::{Decode, Encode, Result as EResult};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::io::{Read, Write};
 
 pub struct NbtData<T>(pub T);
@@ -19,13 +18,13 @@ impl Decode for NbtBlob {
 }
 
 impl<T: Serialize> Encode for NbtData<T> {
-	fn encode(&self, mut writer: &mut dyn Write) -> EResult<()> {
+	fn encode(&self, writer: &mut dyn Write) -> EResult<()> {
 		nbt::to_writer(writer, &self.0, None).map_err(|err| encde::Error::Custom(Box::new(err)))
 	}
 }
 
 impl<T: serde::de::DeserializeOwned> Decode for NbtData<T> {
-	fn decode(mut reader: &mut dyn Read) -> EResult<Self> {
+	fn decode(reader: &mut dyn Read) -> EResult<Self> {
 		Ok(Self(nbt::from_reader(reader).map_err(|err| encde::Error::Custom(Box::new(err)))?))
 	}
 }

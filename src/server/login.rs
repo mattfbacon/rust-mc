@@ -4,7 +4,7 @@ use crate::packets::helpers::wrappers::std::{PrefixedArray, PrefixedBorrowedByte
 use crate::packets::helpers::wrappers::uuid::Uuid as UuidWrapper;
 use crate::packets::login::receive::{self, Packet as Receive};
 use crate::packets::login::send::Packet as Send;
-use log::{debug, trace};
+use log::trace;
 use serde::{Deserialize, Deserializer};
 use sha::utils::{Digest, DigestExt};
 

@@ -1,10 +1,8 @@
 use super::super::position::UnpackedPosition;
 use super::super::varint::VarLong;
 use super::super::wrappers::{bitvec::PrefixedBitVec, std::*};
-use bitvec::vec::BitVec;
 use encde::{Decode, Encode, Result as EResult};
-use serde::{Deserialize, Serialize};
-use std::io::{Read, Write};
+use std::io::Write;
 
 #[derive(Encode, Decode)]
 pub struct LightUpdateCommon {

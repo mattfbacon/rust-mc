@@ -1,10 +1,7 @@
 use super::super::wrappers::{std::*, uuid::Uuid};
 use super::entity;
 use super::slot::Slot;
-use bitvec::vec::BitVec;
-use encde::{Decode, Encode, Result as EResult};
-use serde::{Deserialize, Serialize};
-use std::io::{Read, Write};
+use encde::Encode;
 
 // TODO implement
 // #[derive(Encode)]

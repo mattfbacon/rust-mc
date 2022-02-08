@@ -4,7 +4,6 @@ use super::varint::*;
 use super::wrappers::std::*;
 use super::wrappers::util::encode_u8_slice;
 use encde::{Decode, Encode, Result as EResult};
-use serde::{Deserialize, Serialize};
 use std::io::{Read, Write};
 
 #[derive(Encode, Decode)]

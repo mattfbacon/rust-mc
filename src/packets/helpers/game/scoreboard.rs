@@ -2,10 +2,8 @@ use super::super::varint::VarInt;
 use super::super::wrappers::std::PrefixedString;
 use super::super::wrappers::util::encode_u8_slice;
 use super::chat::Chat;
-use bitvec::vec::BitVec;
-use encde::{Decode, Encode, Result as EResult};
-use serde::{Deserialize, Serialize};
-use std::io::{Read, Write};
+use encde::{Encode, Result as EResult};
+use std::io::Write;
 
 pub enum Position {
 	List,
