@@ -84,3 +84,25 @@ pub enum HoverEvent {
 	/// TODO more specific types
 	ShowEntity(serde_json::Value),
 }
+
+#[derive(Encode, Decode)]
+#[repr(i8)]
+pub enum ChatPosition {
+	Chat = 0,
+	System = 1,
+	GameInfo = 2,
+}
+
+#[derive(Encode, Decode)]
+#[repr(i8)]
+pub enum ClientChatMode {
+	Enabled = 0,
+	CommandsOnly = 1,
+	Hidden = 2,
+}
+
+#[derive(Encode)]
+pub struct TabCompletion {
+	text: PrefixedString,
+	tooltip: PrefixedOption<Chat>,
+}

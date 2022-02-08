@@ -1,5 +1,4 @@
 use super::Client;
-use crate::packets::helpers::{chat, Json};
 use crate::packets::play::{receive::Packet as Receive, send::Packet as Send};
 use log::debug;
 
