@@ -6,27 +6,27 @@ use encde::{Decode, Encode, Result as EResult};
 use serde::{Deserialize, Serialize};
 use std::io::{Read, Write};
 
-pub enum UnlockRecipesAction {
+pub enum UnlockAction {
 	Init { already_shown: PrefixedVec<PrefixedString>, new: PrefixedVec<PrefixedString> },
 	Add(PrefixedVec<PrefixedString>),
 	Remove(PrefixedVec<PrefixedString>),
 }
 
 #[derive(Encode)]
-pub struct RecipeBookState {
+pub struct BookState {
 	open: bool,
 	filter_active: bool,
 }
 
 pub struct Recipe {
 	id: PrefixedString,
-	data: RecipeType,
+	data: Type,
 }
 
-pub enum RecipeType {
+pub enum Type {
 	Shapeless {
 		group: PrefixedString,
-		ingredients: PrefixedVec<RecipeIngredient>,
+		ingredients: PrefixedVec<Ingredient>,
 		result: Slot,
 	},
 	Shaped {
@@ -34,7 +34,7 @@ pub enum RecipeType {
 		height: VarInt,
 		group: PrefixedString,
 		/// width * height; row-major
-		ingredients: Vec<RecipeIngredient>,
+		ingredients: Vec<Ingredient>,
 		result: Slot,
 	},
 	ArmorDye,
@@ -57,12 +57,12 @@ pub enum RecipeType {
 	CampfireCooking(SmeltingRecipe),
 	Stonecutting {
 		group: PrefixedString,
-		ingredient: RecipeIngredient,
+		ingredient: Ingredient,
 		result: Slot,
 	},
 	Smithing {
-		base: RecipeIngredient,
-		addition: RecipeIngredient,
+		base: Ingredient,
+		addition: Ingredient,
 		result: Slot,
 	},
 }
@@ -70,49 +70,49 @@ pub enum RecipeType {
 #[derive(Encode)]
 pub struct SmeltingRecipe {
 	group: PrefixedString,
-	ingredient: RecipeIngredient,
+	ingredient: Ingredient,
 	result: Slot,
 	experience: f32,
 	cooking_time: VarInt,
 }
 
-pub type RecipeIngredient = PrefixedVec<Slot>;
+pub type Ingredient = PrefixedVec<Slot>;
 
 impl Encode for Recipe {
 	fn encode(&self, writer: &mut dyn Write) -> EResult<()> {
 		let identifier = match &self.data {
-			RecipeType::Shapeless { .. } => "crafting_shapeless",
-			RecipeType::Shaped { .. } => "crafting_shaped",
-			RecipeType::ArmorDye => "crafting_special_armordye",
-			RecipeType::BookCloning => "crafting_special_bookcloning",
-			RecipeType::MapCloning => "crafting_special_mapcloning",
-			RecipeType::MapExtending => "crafting_special_mapextending",
-			RecipeType::FireworkRocket => "crafting_special_firework_rocket",
-			RecipeType::FireworkStar => "crafting_special_firework_star",
-			RecipeType::FireworkStarFade => "crafting_special_firework_star_fade",
-			RecipeType::RepairItem => "crafting_special_repairitem",
-			RecipeType::TippedArrow => "crafting_special_tippedarrow",
-			RecipeType::BannerDuplicate => "crafting_special_bannerduplicate",
-			RecipeType::BannerAddPattern => "crafting_special_banneraddpattern",
-			RecipeType::ShieldDecoration => "crafting_special_shielddecoration",
-			RecipeType::ShulkerBoxColoring => "crafting_special_shulkerboxcoloring",
-			RecipeType::SuspiciousStew => "crafting_special_suspiciousstew",
-			RecipeType::Smelting(_) => "smelting",
-			RecipeType::Blasting(_) => "blasting",
-			RecipeType::Smoking(_) => "smoking",
-			RecipeType::CampfireCooking(_) => "campfire_cooking",
-			RecipeType::Stonecutting { .. } => "stonecutting",
-			RecipeType::Smithing { .. } => "smithing",
+			Type::Shapeless { .. } => "crafting_shapeless",
+			Type::Shaped { .. } => "crafting_shaped",
+			Type::ArmorDye => "crafting_special_armordye",
+			Type::BookCloning => "crafting_special_bookcloning",
+			Type::MapCloning => "crafting_special_mapcloning",
+			Type::MapExtending => "crafting_special_mapextending",
+			Type::FireworkRocket => "crafting_special_firework_rocket",
+			Type::FireworkStar => "crafting_special_firework_star",
+			Type::FireworkStarFade => "crafting_special_firework_star_fade",
+			Type::RepairItem => "crafting_special_repairitem",
+			Type::TippedArrow => "crafting_special_tippedarrow",
+			Type::BannerDuplicate => "crafting_special_bannerduplicate",
+			Type::BannerAddPattern => "crafting_special_banneraddpattern",
+			Type::ShieldDecoration => "crafting_special_shielddecoration",
+			Type::ShulkerBoxColoring => "crafting_special_shulkerboxcoloring",
+			Type::SuspiciousStew => "crafting_special_suspiciousstew",
+			Type::Smelting(_) => "smelting",
+			Type::Blasting(_) => "blasting",
+			Type::Smoking(_) => "smoking",
+			Type::CampfireCooking(_) => "campfire_cooking",
+			Type::Stonecutting { .. } => "stonecutting",
+			Type::Smithing { .. } => "smithing",
 		};
 		encode_u8_slice(writer, identifier.as_bytes())?;
 		self.id.encode(writer)?;
 		match &self.data {
-			RecipeType::Shapeless { group, ingredients, result } => {
+			Type::Shapeless { group, ingredients, result } => {
 				group.encode(writer)?;
 				ingredients.encode(writer)?;
 				result.encode(writer)?;
 			}
-			RecipeType::Shaped { width, height, group, ingredients, result } => {
+			Type::Shaped { width, height, group, ingredients, result } => {
 				width.encode(writer)?;
 				height.encode(writer)?;
 				group.encode(writer)?;
@@ -123,30 +123,30 @@ impl Encode for Recipe {
 				}
 				result.encode(writer)?;
 			}
-			RecipeType::ArmorDye => {}
-			RecipeType::BookCloning => {}
-			RecipeType::MapCloning => {}
-			RecipeType::MapExtending => {}
-			RecipeType::FireworkRocket => {}
-			RecipeType::FireworkStar => {}
-			RecipeType::FireworkStarFade => {}
-			RecipeType::RepairItem => {}
-			RecipeType::TippedArrow => {}
-			RecipeType::BannerDuplicate => {}
-			RecipeType::BannerAddPattern => {}
-			RecipeType::ShieldDecoration => {}
-			RecipeType::ShulkerBoxColoring => {}
-			RecipeType::SuspiciousStew => {}
-			RecipeType::Smelting(inner) => inner.encode(writer)?,
-			RecipeType::Blasting(inner) => inner.encode(writer)?,
-			RecipeType::Smoking(inner) => inner.encode(writer)?,
-			RecipeType::CampfireCooking(inner) => inner.encode(writer)?,
-			RecipeType::Stonecutting { group, ingredient, result } => {
+			Type::ArmorDye => {}
+			Type::BookCloning => {}
+			Type::MapCloning => {}
+			Type::MapExtending => {}
+			Type::FireworkRocket => {}
+			Type::FireworkStar => {}
+			Type::FireworkStarFade => {}
+			Type::RepairItem => {}
+			Type::TippedArrow => {}
+			Type::BannerDuplicate => {}
+			Type::BannerAddPattern => {}
+			Type::ShieldDecoration => {}
+			Type::ShulkerBoxColoring => {}
+			Type::SuspiciousStew => {}
+			Type::Smelting(inner) => inner.encode(writer)?,
+			Type::Blasting(inner) => inner.encode(writer)?,
+			Type::Smoking(inner) => inner.encode(writer)?,
+			Type::CampfireCooking(inner) => inner.encode(writer)?,
+			Type::Stonecutting { group, ingredient, result } => {
 				group.encode(writer)?;
 				ingredient.encode(writer)?;
 				result.encode(writer)?;
 			}
-			RecipeType::Smithing { base, addition, result } => {
+			Type::Smithing { base, addition, result } => {
 				base.encode(writer)?;
 				addition.encode(writer)?;
 				result.encode(writer)?;
@@ -158,7 +158,7 @@ impl Encode for Recipe {
 
 #[derive(Encode, Decode)]
 #[repr(u8)]
-pub enum RecipeBookType {
+pub enum BookType {
 	Crafting = 0,
 	Furnace = 1,
 	BlastFurnace = 2,

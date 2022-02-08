@@ -1,8 +1,12 @@
 use crate::packets::helpers;
 use encde::Decode;
+use helpers::game::*;
+use helpers::misc;
+use helpers::position as pos;
+use helpers::rotation as rot;
 use helpers::varint::*;
-use helpers::varint::{VarInt, VarLong};
 use helpers::wrappers::std::*;
+use helpers::wrappers::uuid::Uuid;
 
 #[derive(Decode)]
 pub struct ConfirmTeleport {
@@ -12,11 +16,11 @@ pub struct ConfirmTeleport {
 #[derive(Decode)]
 pub struct QueryBlockNbt {
 	transaction_id: VarInt,
-	location: PackedPosition,
+	location: pos::PackedPosition,
 }
 
 #[derive(Decode)]
-pub struct SetDifficulty(ServerDifficulty);
+pub struct SetDifficulty(misc::ServerDifficulty);
 
 #[derive(Decode)]
 pub struct SendChatMessage(PrefixedString);
@@ -32,7 +36,7 @@ pub enum RequestMisc {
 pub struct UpdateClientSettings {
 	locale: PrefixedString,
 	render_distance: i8,
-	chat_mode: ClientChatMode,
+	chat_mode: chat::ClientChatMode,
 	chat_colors: bool,
 	/// Bit flags (TODO custom type)
 	/// 1 = cape
@@ -69,8 +73,8 @@ pub struct ClickWindowSlot {
 	clicked_slot_index: i16,
 	button: i8,
 	mode: VarInt,
-	updated_slots: PrefixedVec<IndexedSlot>,
-	clicked_slot_data: Slot,
+	updated_slots: PrefixedVec<slot::IndexedSlot>,
+	clicked_slot_data: slot::Slot,
 }
 
 #[derive(Decode)]
@@ -87,7 +91,7 @@ pub struct PluginMessage {
 
 #[derive(Decode)]
 pub struct EditBook {
-	hand: PlayerHand,
+	hand: misc::PlayerHand,
 	pages: PrefixedVec<PrefixedString>,
 	title: PrefixedOption<PrefixedString>,
 }
@@ -101,13 +105,13 @@ pub struct QueryEntityNbt {
 #[derive(Decode)]
 pub struct InteractWithEntity {
 	target_id: VarInt,
-	interaction_type: InteractionType,
+	interaction_type: misc::InteractionType,
 	sneaking: bool,
 }
 
 #[derive(Decode)]
 pub struct GenerateStructure {
-	location: PackedPosition,
+	location: pos::PackedPosition,
 	levels: VarInt,
 	keep_jigsaws: bool,
 }
@@ -122,20 +126,20 @@ pub struct SetDifficultyLocked {
 
 #[derive(Decode)]
 pub struct MovePosition {
-	new_position: F64Position,
+	new_position: pos::F64Position,
 	on_ground: bool,
 }
 
 #[derive(Decode)]
 pub struct MoveRotation {
-	new_rotation: F32Rotation,
+	new_rotation: rot::F32Rotation,
 	on_ground: bool,
 }
 
 #[derive(Decode)]
 pub struct MovePosRot {
-	new_position: F64Position,
-	new_rotation: F32Rotation,
+	new_position: pos::F64Position,
+	new_rotation: rot::F32Rotation,
 	on_ground: bool,
 }
 
@@ -146,8 +150,8 @@ pub struct MoveStationary {
 
 #[derive(Decode)]
 pub struct MoveVehicle {
-	new_position: F64Position,
-	new_rotation: F32Rotation,
+	new_position: pos::F64Position,
+	new_rotation: rot::F32Rotation,
 }
 
 #[derive(Decode)]
@@ -178,16 +182,16 @@ pub struct UpdateFlying {
 /// As the name suggests, this is very general. The `block` and `face` fields exist due to it being used for digging blocks, however it's also used for various other actions, in which case `block` and `face` can be ignored.
 #[derive(Decode)]
 pub struct TakeGeneralAction {
-	action: GeneralAction,
-	block: PackedPosition,
-	face: BlockFace,
+	action: misc::GeneralAction,
+	block: pos::PackedPosition,
+	face: misc::BlockFace,
 }
 
 #[derive(Decode)]
 pub struct TakeEntityAction {
 	/// This can probably be ignored since we know the Player ID
 	player_id: VarInt,
-	action: EntityAction,
+	action: misc::EntityAction,
 	/// Only meaningful with "Start Horse Jump" action
 	jump_boost: VarInt,
 }
@@ -207,7 +211,7 @@ pub struct Pong(i32);
 
 #[derive(Decode)]
 pub struct SetRecipeBookState {
-	book_id: RecipeBookType,
+	book_id: recipes::BookType,
 	book_open: bool,
 	filter_active: bool,
 }
@@ -245,8 +249,8 @@ pub struct SelectTrade {
 
 #[derive(Decode)]
 pub struct SetBeaconEffect {
-	primary_effect: PotionId,
-	secondary_effect: PotionId,
+	primary_effect: misc::PotionId,
+	secondary_effect: misc::PotionId,
 }
 
 #[derive(Decode)]
@@ -254,9 +258,9 @@ pub struct ChangeHeldItem(i16);
 
 #[derive(Decode)]
 pub struct UpdateCommandBlock {
-	location: PackedPosition,
+	location: pos::PackedPosition,
 	command: PrefixedString,
-	mode: CommandBlockMode,
+	mode: misc::CommandBlockMode,
 	/// Bit flags (TODO custom type)
 	/// 1 = Track output
 	/// 2 = Conditional
@@ -273,11 +277,11 @@ pub struct UpdateCommandBlockMinecart {
 
 /// Creative only
 #[derive(Decode)]
-pub struct CheatInventorySlot(IndexedSlot);
+pub struct CheatInventorySlot(slot::IndexedSlot);
 
 #[derive(Decode)]
 pub struct UpdateJigsawBlock {
-	location: PackedPosition,
+	location: pos::PackedPosition,
 	name: PrefixedString,
 	target: PrefixedString,
 	pool: PrefixedString,
@@ -287,14 +291,14 @@ pub struct UpdateJigsawBlock {
 
 #[derive(Decode)]
 pub struct UpdateStructureBlock {
-	location: PackedPosition,
-	action: StructureBlockAction,
-	mode: StructureBlockUpdateType,
+	location: pos::PackedPosition,
+	action: misc::StructureBlockAction,
+	mode: misc::StructureBlockUpdateType,
 	name: PrefixedString,
-	offset: UnpackedPosition<i8>,
-	size: UnpackedPosition<i8>,
-	mirror: StructureBlockMirroring,
-	rotation: StructureBlockRotation,
+	offset: pos::UnpackedPosition<i8>,
+	size: pos::UnpackedPosition<i8>,
+	mirror: misc::StructureBlockMirroring,
+	rotation: misc::StructureBlockRotation,
 	metadata: PrefixedString,
 	integrity: f32,
 	seed: VarLong,
@@ -307,7 +311,7 @@ pub struct UpdateStructureBlock {
 
 #[derive(Decode)]
 pub struct UpdateSign {
-	location: PackedPosition,
+	location: pos::PackedPosition,
 	line1: PrefixedString,
 	line2: PrefixedString,
 	line3: PrefixedString,
@@ -315,22 +319,22 @@ pub struct UpdateSign {
 }
 
 #[derive(Decode)]
-pub struct TriggerArmAnimation(PlayerHand);
+pub struct TriggerArmAnimation(misc::PlayerHand);
 
 #[derive(Decode)]
 pub struct SpectateEntity(Uuid);
 
 #[derive(Decode)]
 pub struct PlaceBlock {
-	hand: PlayerHand,
-	location: PackedPosition,
-	face: BlockFace,
-	cursor_position_within_block: F32Position,
+	hand: misc::PlayerHand,
+	location: pos::PackedPosition,
+	face: misc::BlockFace,
+	cursor_position_within_block: pos::F32Position,
 	head_inside_block: bool,
 }
 
 #[derive(Decode)]
-pub struct UseItem(PlayerHand);
+pub struct UseItem(misc::PlayerHand);
 
 #[derive(Decode)]
 #[repr(u8)]
@@ -340,7 +344,7 @@ pub enum Packet {
 	#[encde(wire_tag = 0x01)]
 	QueryBlockNbt(QueryBlockNbt),
 	#[encde(wire_tag = 0x02)]
-	SetDifficulty(ServerDifficulty),
+	SetDifficulty(misc::ServerDifficulty),
 	#[encde(wire_tag = 0x03)]
 	SendChatMessage(SendChatMessage),
 	#[encde(wire_tag = 0x04)]

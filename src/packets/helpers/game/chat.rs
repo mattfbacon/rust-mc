@@ -92,7 +92,7 @@ pub enum HoverEvent {
 
 #[derive(Encode, Decode)]
 #[repr(i8)]
-pub enum ChatPosition {
+pub enum Position {
 	Chat = 0,
 	System = 1,
 	GameInfo = 2,

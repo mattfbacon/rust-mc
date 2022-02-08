@@ -6,41 +6,51 @@ use std::io::{Read, Write};
 use super::biome::BiomeRegistry;
 
 #[derive(Serialize, Deserialize)]
-pub struct DimensionCodec {
+pub struct Codec {
 	#[serde(rename = "minecraft:dimension_type")]
-	dimension_types: DimensionTypeRegistry,
+	dimension_types: TypeRegistry,
 	#[serde(rename = "minecraft:worldgen/biome")]
 	biomes: BiomeRegistry,
 }
 
-pub struct DimensionTypeRegistry(Vec<DimensionTypeEntry>);
+pub struct TypeRegistry(Vec<TypeEntry>);
 
-#[derive(Serialize, Deserialize)]
-struct DimensionTypeRegistryWire<'a> {
+#[derive(Serialize)]
+struct TypeRegistryWireSer<'a> {
 	#[serde(rename = "type")]
 	ty: &'a str,
-	value: Vec<DimensionTypeEntry>,
+	value: &'a [TypeEntry],
 }
-impl Serialize for DimensionTypeRegistry {
+#[derive(Deserialize)]
+struct TypeRegistryWireDe<'a> {
+	#[serde(rename = "type")]
+	ty: &'a str,
+	value: Vec<TypeEntry>,
+}
+impl Serialize for TypeRegistry {
 	fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-		DimensionTypeRegistryWire { ty: "minecraft:dimension_type", value: self.0 }.serialize(serializer)
+		TypeRegistryWireSer {
+			ty: "minecraft:dimension_type",
+			value: &self.0,
+		}
+		.serialize(serializer)
 	}
 }
-impl<'de> Deserialize<'de> for DimensionTypeRegistry {
+impl<'de> Deserialize<'de> for TypeRegistry {
 	fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-		Ok(Self(DimensionTypeRegistryWire::deserialize(deserializer)?.value))
+		Ok(Self(TypeRegistryWireDe::deserialize(deserializer)?.value))
 	}
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct DimensionTypeEntry {
+pub struct TypeEntry {
 	name: String,
 	id: i32,
-	element: DimensionType,
+	element: Type,
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct DimensionType {
+pub struct Type {
 	piglin_safe: bool,
 	natural: bool,
 	ambient_light: f32,

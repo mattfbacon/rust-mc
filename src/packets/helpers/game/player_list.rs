@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use std::io::{Read, Write};
 
 #[derive(Encode)]
-pub struct PlayerListAddPlayer {
+pub struct AddPlayer {
 	player_uuid: Uuid,
 	/// Usually one item named "textures" with the profile, skin, and cape data from the Mojang API as Base-64 JSON
 	properties: PrefixedVec<AddPlayerProperty>,
@@ -25,24 +25,24 @@ pub struct AddPlayerProperty {
 }
 
 #[derive(Encode)]
-pub struct PlayerListUpdateGamemode {
+pub struct UpdateGamemode {
 	player_uuid: Uuid,
 	new_gamemode: GameMode,
 }
 
 #[derive(Encode)]
-pub struct PlayerListUpdateLatency {
+pub struct UpdateLatency {
 	player_uuid: Uuid,
 	ping: VarInt,
 }
 
 #[derive(Encode)]
-pub struct PlayerListUpdateDisplayName {
+pub struct UpdateDisplayName {
 	player_uuid: Uuid,
 	display_name: PrefixedOption<Chat>,
 }
 
 #[derive(Encode)]
-pub struct PlayerListRemovePlayer {
+pub struct RemovePlayer {
 	player_uuid: Uuid,
 }

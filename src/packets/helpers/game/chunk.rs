@@ -23,11 +23,11 @@ pub struct HeightMaps(());
 
 // TODO implement
 // #[derive(Encode, Decode)]
-pub struct ChunkBlocks(());
+pub struct Blocks(());
 
 // TODO implement
 // #[derive(Encode, Decode)]
-pub struct ChunkBlockEntities(());
+pub struct BlockEntities(());
 
 /// 2048 u8 backing items, 4096 4-bit entries
 #[derive(Encode, Decode)]
@@ -38,14 +38,14 @@ pub struct SkyLightData(PrefixedBitVec<u8>);
 pub struct BlockLightData(PrefixedBitVec<u8>);
 
 #[derive(Encode, Decode)]
-pub struct ChunkPosition<T: Encode + Decode> {
+pub struct Position<T: Encode + Decode> {
 	pub x: T,
 	pub z: T,
 }
 
-pub struct ChunkSectionPosition(UnpackedPosition<i32>);
+pub struct SectionPosition(UnpackedPosition<i32>);
 
-impl Encode for ChunkSectionPosition {
+impl Encode for SectionPosition {
 	fn encode(&self, writer: &mut dyn Write) -> EResult<()> {
 		let encoded: u64 = ((((self.0.x as u32) & 0x3fffff) as u64) << 42) | (((self.0.y as u32) & 0xfffff) as u64) | ((((self.0.z as u32) & 0x3fffff) as u64) << 20);
 		encoded.encode(writer)

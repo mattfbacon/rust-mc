@@ -1,6 +1,6 @@
 use super::super::wrappers::std::{PrefixedOption, PrefixedVec};
 use super::chat::Chat;
-use super::chunk::ChunkPosition;
+use super::chunk::Position as ChunkPosition;
 use bitvec::vec::BitVec;
 use encde::{Decode, Encode, Result as EResult};
 use serde::{Deserialize, Serialize};

@@ -2,20 +2,30 @@ use serde::{Deserialize, Serialize};
 
 pub struct BiomeRegistry(Vec<BiomeRegistryEntry>);
 
-#[derive(Serialize, Deserialize)]
-struct BiomeRegistryWire<'a> {
+#[derive(Deserialize)]
+struct BiomeRegistryWireDe<'a> {
 	#[serde(rename = "type")]
 	ty: &'a str,
 	value: Vec<BiomeRegistryEntry>,
 }
+#[derive(Serialize)]
+struct BiomeRegistryWireSer<'a> {
+	#[serde(rename = "type")]
+	ty: &'a str,
+	value: &'a [BiomeRegistryEntry],
+}
 impl Serialize for BiomeRegistry {
 	fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-		BiomeRegistryWire { ty: "minecraft:worldgen/biome", value: self.0 }.serialize(serializer)
+		BiomeRegistryWireSer {
+			ty: "minecraft:worldgen/biome",
+			value: &self.0,
+		}
+		.serialize(serializer)
 	}
 }
 impl<'de> Deserialize<'de> for BiomeRegistry {
 	fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-		Ok(Self(BiomeRegistryWire::deserialize(deserializer)?.value))
+		Ok(Self(BiomeRegistryWireDe::deserialize(deserializer)?.value))
 	}
 }
 

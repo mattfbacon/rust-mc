@@ -7,14 +7,14 @@ use encde::{Decode, Encode, Result as EResult};
 use serde::{Deserialize, Serialize};
 use std::io::{Read, Write};
 
-pub enum ScoreboardPosition {
+pub enum Position {
 	List,
 	Sidebar,
 	BelowName,
 	TeamSidebar(u8),
 }
 
-impl Encode for ScoreboardPosition {
+impl Encode for Position {
 	fn encode(&self, writer: &mut dyn Write) -> EResult<()> {
 		let encoded: u8 = match self {
 			Self::List => 0,
@@ -28,24 +28,24 @@ impl Encode for ScoreboardPosition {
 
 #[derive(Encode)]
 #[repr(u8)]
-pub enum ScoreboardObjectiveUpdate {
+pub enum ObjectiveUpdate {
 	#[encde(wire_tag = 0)]
-	Create(ScoreboardObjectiveData),
+	Create(ObjectiveData),
 	#[encde(wire_tag = 1)]
 	Remove,
 	#[encde(wire_tag = 2)]
-	Update(ScoreboardObjectiveData),
+	Update(ObjectiveData),
 }
 
 #[derive(Encode)]
-pub struct ScoreboardObjectiveData {
+pub struct ObjectiveData {
 	value: Chat,
-	ty: ScoreboardObjectiveType,
+	ty: ObjectiveType,
 }
 
 #[derive(Encode)]
 #[repr(u8)]
-pub enum ScoreboardObjectiveType {
+pub enum ObjectiveType {
 	Integer = 0,
 	Hearts = 1,
 }

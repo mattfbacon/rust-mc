@@ -1,5 +1,14 @@
-use crate::packets::helpers::varint::*;
+use crate::packets::helpers;
 use encde::Encode;
+use helpers::game::*;
+use helpers::misc;
+use helpers::position as pos;
+use helpers::rotation as rot;
+use helpers::time;
+use helpers::varint::*;
+use helpers::wrappers::nbt::{NbtBlob, NbtData};
+use helpers::wrappers::std::*;
+use helpers::wrappers::uuid::Uuid;
 
 #[derive(Encode)]
 pub struct SpawnEntity {
@@ -7,16 +16,16 @@ pub struct SpawnEntity {
 	object_uuid: Uuid,
 	/// TODO more specific type
 	entity_type: VarInt,
-	position: F64Position,
-	rotation: AngleRotation,
+	position: pos::F64Position,
+	rotation: rot::AngleRotation,
 	object_data: i32,
-	velocity: EntityVelocity,
+	velocity: entity::Velocity,
 }
 
 #[derive(Encode)]
 pub struct SpawnExperienceOrb {
 	entity_id: VarInt,
-	position: F64Position,
+	position: pos::F64Position,
 	experience_value: i16,
 }
 
@@ -25,18 +34,18 @@ pub struct SpawnLivingEntity {
 	entity_id: VarInt,
 	entity_uuid: Uuid,
 	entity_type: VarInt,
-	position: F64Position,
-	rotation: AngleRotation,
-	head_pitch: Angle,
-	velocity: EntityVelocity,
+	position: pos::F64Position,
+	rotation: rot::AngleRotation,
+	head_pitch: rot::Angle,
+	velocity: entity::Velocity,
 }
 
 #[derive(Encode)]
 pub struct SpawnPainting {
 	entity_id: VarInt,
 	entity_uuid: Uuid,
-	name: PaintingName,
-	direction: CardinalDirection,
+	name: misc::PaintingName,
+	direction: misc::CardinalDirection,
 }
 
 /// When a player comes into the visible range of another player
@@ -44,45 +53,45 @@ pub struct SpawnPainting {
 pub struct SpawnPlayer {
 	entity_id: VarInt,
 	entity_uuid: Uuid,
-	position: F64Position,
-	rotation: AngleRotation,
+	position: pos::F64Position,
+	rotation: rot::AngleRotation,
 }
 
 #[derive(Encode)]
 pub struct SculkVibrationSignal {
-	source_position: PackedPosition,
-	destination: SculkDestination,
+	source_position: pos::PackedPosition,
+	destination: misc::SculkDestination,
 	arrival_ticks: VarInt,
 }
 
 #[derive(Encode)]
 pub struct EntityAnimation {
 	entity_id: VarInt,
-	animation: AnimationType,
+	animation: misc::AnimationType,
 }
 
 #[derive(Encode)]
-pub struct Statistics(PrefixedVec<StatisticsEntry>);
+pub struct Statistics(PrefixedVec<misc::StatisticsEntry>);
 
 #[derive(Encode)]
 pub struct AcknowledgePlayerDigging {
-	location: PackedPosition,
+	location: pos::PackedPosition,
 	new_block_state: VarInt,
 	/// Only digging-related actions are used
-	desired_digging_status: GeneralAction,
+	desired_digging_status: misc::GeneralAction,
 	successful: bool,
 }
 
 #[derive(Encode)]
 pub struct BlockBreakAnimation {
 	breaker_entity_id: VarInt,
-	block_location: PackedPosition,
-	destroy_stage: DestroyStage,
+	block_location: pos::PackedPosition,
+	destroy_stage: misc::DestroyStage,
 }
 
 #[derive(Encode)]
 pub struct UpdateBlockEntityData {
-	block_location: PackedPosition,
+	block_location: pos::PackedPosition,
 	tag_type: VarInt,
 	nbt_data: NbtBlob,
 }
@@ -90,33 +99,33 @@ pub struct UpdateBlockEntityData {
 /// AKA "Block Action"
 #[derive(Encode)]
 pub struct TriggerBlockAction {
-	location: PackedPosition,
-	action: BlockAction,
+	location: pos::PackedPosition,
+	action: misc::BlockAction,
 	block_state: VarInt,
 }
 
 #[derive(Encode)]
 pub struct BlockChange {
-	location: PackedPosition,
+	location: pos::PackedPosition,
 	new_block_state: VarInt,
 }
 
 #[derive(Encode)]
 pub struct UpdateBossBar {
 	bar_uuid: Uuid,
-	update_type: BossBarUpdateType,
+	update_type: bossbar::UpdateType,
 }
 
 #[derive(Encode)]
 pub struct UpdateServerDifficulty {
-	difficulty: ServerDifficulty,
+	difficulty: misc::ServerDifficulty,
 	locked: bool,
 }
 
 #[derive(Encode)]
 pub struct ChatMessage {
-	message: Chat,
-	position: ChatPosition,
+	message: chat::Chat,
+	position: chat::Position,
 	sender: Uuid,
 }
 
@@ -130,7 +139,7 @@ pub struct TabCompletions {
 	transaction_id: VarInt,
 	replace_start: VarInt,
 	replace_length: VarInt,
-	completions: PrefixedVec<TabCompletion>,
+	completions: PrefixedVec<chat::TabCompletion>,
 }
 
 // TODO DeclareCommands
@@ -145,9 +154,9 @@ pub struct UpdateWindowItems {
 	window_id: u8,
 	/// The client echoes the most recently received State ID in subsequent window-related packets
 	state_id: VarInt,
-	slot_data: PrefixedVec<Slot>,
+	slot_data: PrefixedVec<slot::Slot>,
 	/// Item that the player is holding with their mouse
-	floating_item: Slot,
+	floating_item: slot::Slot,
 }
 
 #[derive(Encode)]
@@ -162,7 +171,7 @@ pub struct UpdateWindowProperty {
 pub struct SetWindowSlot {
 	window_id: i8, // not u8
 	state_id: VarInt,
-	slot: IndexedSlot,
+	slot: slot::IndexedSlot,
 }
 
 #[derive(Encode)]
@@ -181,8 +190,8 @@ pub struct PluginMessage {
 #[derive(Encode)]
 pub struct PlayNamedSoundEffect {
 	sound_name: PrefixedString,
-	sound_category: SoundCategory,
-	effect_position: EffectPosition,
+	sound_category: misc::SoundCategory,
+	effect_position: pos::EffectPosition,
 	/// 1 = full volume
 	volume: f32,
 	/// 0.5 to 2.0
@@ -197,15 +206,15 @@ pub struct UpdateEntityStatus {
 
 #[derive(Encode)]
 pub struct Explosion {
-	position: F32Position,
+	position: pos::F32Position,
 	strength: f32,
-	blocks_destroyed: PrefixedVec<UnpackedPosition<i8>>,
-	client_motion: F32Position,
+	blocks_destroyed: PrefixedVec<pos::UnpackedPosition<i8>>,
+	client_motion: pos::F32Position,
 }
 
 #[derive(Encode)]
 pub struct UnloadChunk {
-	chunk_position: ChunkPosition<i32>,
+	chunk_position: chunk::Position<i32>,
 }
 
 #[derive(Encode)]
@@ -228,10 +237,10 @@ pub struct WorldBorderInitialize {
 	center_z: f64,
 	old_diameter: f64,
 	new_diameter: f64,
-	transition_time: Milliseconds,
+	transition_time: time::Milliseconds,
 	portal_teleport_boundary: VarInt,
 	warning_blocks: VarInt,
-	warning_time: Seconds,
+	warning_time: time::Seconds,
 }
 
 #[derive(Encode)]
@@ -240,17 +249,17 @@ pub struct KeepAlive(i64);
 // TODO implement
 // #[derive(Encode)]
 pub struct UpdateChunkData {
-	chunk_position: ChunkPosition<i32>,
-	height_maps: HeightMaps,
-	chunk_blocks: ChunkBlocks,
-	chunk_block_entities: ChunkBlockEntities,
-	common: LightUpdateCommon,
+	chunk_position: chunk::Position<i32>,
+	height_maps: chunk::HeightMaps,
+	chunk_blocks: chunk::Blocks,
+	chunk_block_entities: chunk::BlockEntities,
+	common: chunk::LightUpdateCommon,
 }
 
 #[derive(Encode)]
 pub struct TriggerEffect {
-	effect_id: EffectId,
-	location: PackedPosition,
+	effect_id: misc::EffectId,
+	location: pos::PackedPosition,
 	effect_data: i32,
 	disable_relative_volume: bool,
 }
@@ -259,8 +268,8 @@ pub struct TriggerEffect {
 pub struct ShowParticle {
 	particle_id: i32,
 	long_distance: bool,
-	position: F64Position,
-	offset: F32Position,
+	position: pos::F64Position,
+	offset: pos::F32Position,
 	particle_data: f32,
 	particle_count: i32,
 	particle_extra_data: UnprefixedBytes,
@@ -268,19 +277,19 @@ pub struct ShowParticle {
 
 #[derive(Encode)]
 pub struct UpdateLight {
-	chunk_position: ChunkPosition<VarInt>,
-	common: LightUpdateCommon,
+	chunk_position: chunk::Position<VarInt>,
+	common: chunk::LightUpdateCommon,
 }
 
 #[derive(Encode)]
 pub struct JoinGame {
 	entity_id: i32,
 	is_hardcore: bool,
-	new_game_mode: GameMode,
-	old_game_mode: OptionalGameMode,
+	new_game_mode: misc::GameMode,
+	old_game_mode: misc::OptionalGameMode,
 	dimension_names: PrefixedVec<PrefixedString>,
-	dimension_codec: NbtData<DimensionCodec>,
-	dimension_data: NbtData<DimensionType>,
+	dimension_codec: NbtData<dimension::Codec>,
+	dimension_data: NbtData<dimension::Type>,
 	current_dimension: PrefixedString,
 	hashed_seed: i64,
 	max_players: VarInt,
@@ -299,14 +308,14 @@ pub struct MapData {
 	map_scale: i8,
 	locked: bool,
 	is_tracking_position: bool,
-	icons: PrefixedVec<MapIcon>,
-	update_info: MapUpdate,
+	icons: PrefixedVec<map::MapIcon>,
+	update_info: map::MapUpdate,
 }
 
 #[derive(Encode)]
 pub struct TradeList {
 	window_id: VarInt, // not byte
-	trades: PrefixedVec<VillagerTrade, i8>,
+	trades: PrefixedVec<misc::VillagerTrade, i8>,
 	villager_level: VarInt,
 	experience: VarInt,
 	/// false for Wandering Trader
@@ -319,7 +328,7 @@ pub struct TradeList {
 pub struct UpdateEntityNearPosition {
 	entity_id: VarInt,
 	/// ((current * 32) - (previous * 32)) * 128
-	delta: UnpackedPosition<i16>,
+	delta: pos::UnpackedPosition<i16>,
 	on_ground: bool,
 }
 
@@ -327,27 +336,27 @@ pub struct UpdateEntityNearPosition {
 pub struct UpdateEntityNearPositionRotation {
 	entity_id: VarInt,
 	/// ((current * 32) - (previous * 32)) * 128
-	position_delta: UnpackedPosition<i16>,
-	new_rotation: AngleRotation,
+	position_delta: pos::UnpackedPosition<i16>,
+	new_rotation: rot::AngleRotation,
 	on_ground: bool,
 }
 
 #[derive(Encode)]
 pub struct UpdateEntityRotation {
 	entity_id: VarInt,
-	new_rotation: AngleRotation,
+	new_rotation: rot::AngleRotation,
 	on_ground: bool,
 }
 
 #[derive(Encode)]
 pub struct VehicleMove {
-	position: F64Position,
-	rotation: F32Rotation,
+	position: pos::F64Position,
+	rotation: rot::F32Rotation,
 }
 
 #[derive(Encode)]
 pub struct OpenBook {
-	hand: PlayerHand,
+	hand: misc::PlayerHand,
 }
 
 #[derive(Encode)]
@@ -355,12 +364,12 @@ pub struct OpenWindow {
 	/// This ID is used as a handle for other window-related packets
 	window_id: VarInt,
 	window_type: VarInt,
-	window_title: Chat,
+	window_title: chat::Chat,
 }
 
 #[derive(Encode)]
 pub struct OpenSignEditor {
-	sign_location: PackedPosition,
+	sign_location: pos::PackedPosition,
 }
 
 #[derive(Encode)]
@@ -396,22 +405,22 @@ pub struct PlayerDeath {
 	player_id: VarInt,
 	/// -1 = none
 	killer_id: i32,
-	death_message: Chat,
+	death_message: chat::Chat,
 }
 
 #[derive(Encode)]
 #[repr(u8)]
 pub enum UpdatePlayerList {
 	#[encde(wire_tag = 0)]
-	AddPlayers(PrefixedVec<PlayerListAddPlayer>),
+	AddPlayers(PrefixedVec<player_list::AddPlayer>),
 	#[encde(wire_tag = 1)]
-	UpdateGamemode(PrefixedVec<PlayerListUpdateGamemode>),
+	UpdateGamemode(PrefixedVec<player_list::UpdateGamemode>),
 	#[encde(wire_tag = 2)]
-	UpdateLatency(PrefixedVec<PlayerListUpdateLatency>),
+	UpdateLatency(PrefixedVec<player_list::UpdateLatency>),
 	#[encde(wire_tag = 3)]
-	UpdateDisplayName(PrefixedVec<PlayerListUpdateDisplayName>),
+	UpdateDisplayName(PrefixedVec<player_list::UpdateDisplayName>),
 	#[encde(wire_tag = 4)]
-	RemovePlayers(PrefixedVec<PlayerListRemovePlayer>),
+	RemovePlayers(PrefixedVec<player_list::RemovePlayer>),
 }
 
 #[derive(Encode)]
@@ -419,16 +428,16 @@ pub struct PlayerLookTargetUpdate {
 	/// To determine the rotation, the client draws a line and uses trigonometry.
 	/// This field determines the origin of that line. false is feet, true is eyes.
 	use_eyes: bool,
-	target: F64Position,
-	target_entity: PrefixedOption<PlayerRotationTargetEntity>,
+	target: pos::F64Position,
+	target_entity: PrefixedOption<misc::PlayerRotationTargetEntity>,
 }
 
 #[derive(Encode)]
 pub struct PlayerPositionRotationUpdate {
 	/// May be absolute or relative at the axis level
-	new_position: F64Position,
+	new_position: pos::F64Position,
 	/// Ditto
-	new_rotation: F32Rotation,
+	new_rotation: rot::F32Rotation,
 	/// TODO more specific type
 	/// Bit flags:
 	/// 1 = new_position.x is relative
@@ -443,19 +452,19 @@ pub struct PlayerPositionRotationUpdate {
 }
 
 pub struct UnlockRecipes {
-	action: UnlockRecipesAction,
-	crafting_book: RecipeBookState,
-	smelting_book: RecipeBookState,
-	blast_furnace_book: RecipeBookState,
-	smoker_book: RecipeBookState,
+	action: recipes::UnlockAction,
+	crafting_book: recipes::BookState,
+	smelting_book: recipes::BookState,
+	blast_furnace_book: recipes::BookState,
+	smoker_book: recipes::BookState,
 }
 
 impl Encode for UnlockRecipes {
 	fn encode(&self, writer: &mut dyn std::io::Write) -> encde::Result<()> {
 		let discriminant = match &self.action {
-			UnlockRecipesAction::Init { .. } => 0,
-			UnlockRecipesAction::Add(_) => 1,
-			UnlockRecipesAction::Remove(_) => 2,
+			recipes::UnlockAction::Init { .. } => 0,
+			recipes::UnlockAction::Add(_) => 1,
+			recipes::UnlockAction::Remove(_) => 2,
 		};
 		VarInt(discriminant).encode(writer)?;
 		self.crafting_book.encode(writer)?;
@@ -463,12 +472,12 @@ impl Encode for UnlockRecipes {
 		self.blast_furnace_book.encode(writer)?;
 		self.smoker_book.encode(writer)?;
 		match &self.action {
-			UnlockRecipesAction::Init { already_shown, new } => {
+			recipes::UnlockAction::Init { already_shown, new } => {
 				already_shown.encode(writer)?;
 				new.encode(writer)?;
 			}
-			UnlockRecipesAction::Add(recipes) => recipes.encode(writer)?,
-			UnlockRecipesAction::Remove(recipes) => recipes.encode(writer)?,
+			recipes::UnlockAction::Add(recipes) => recipes.encode(writer)?,
+			recipes::UnlockAction::Remove(recipes) => recipes.encode(writer)?,
 		};
 		Ok(())
 	}
@@ -487,11 +496,11 @@ pub struct RemoveEntityEffect {
 
 #[derive(Encode)]
 pub struct RespawnPlayer {
-	dimension_data: NbtData<DimensionType>,
+	dimension_data: NbtData<dimension::Type>,
 	dimension_name: PrefixedString,
 	hashed_seed: i64,
-	new_gamemode: GameMode,
-	previous_gamemode: OptionalGameMode,
+	new_gamemode: misc::GameMode,
+	previous_gamemode: misc::OptionalGameMode,
 	is_debug: bool,
 	is_flat: bool,
 	/// If set, the player's metadata will be retained.
@@ -502,23 +511,23 @@ pub struct RespawnPlayer {
 #[derive(Encode)]
 pub struct UpdateEntityHeadRotation {
 	entity_id: VarInt,
-	new_yaw: Angle,
+	new_yaw: rot::Angle,
 }
 
 #[derive(Encode)]
 pub struct MultiBlockChange {
 	/// Positions of blocks to update are relative to this position
-	origin_position: ChunkSectionPosition,
+	origin_position: chunk::SectionPosition,
 	/// The opposite of the trust_edges field in LightUpdateCommon
 	no_trust_edges: bool,
-	changes: PrefixedVec<MultiBlockChangeEntry>,
+	changes: PrefixedVec<chunk::MultiBlockChangeEntry>,
 }
 
 #[derive(Encode)]
 pub struct SelectAdvancementTab(PrefixedOption<PrefixedString>);
 
 #[derive(Encode)]
-pub struct ShowActionBar(Chat);
+pub struct ShowActionBar(chat::Chat);
 
 #[derive(Encode)]
 pub struct WorldBorderSetCenter {
@@ -537,7 +546,7 @@ pub struct WorldBorderTransitionDiameter {
 pub struct WorldBorderSetDiameter(f64);
 
 #[derive(Encode)]
-pub struct WorldBorderSetWarningTime(Milliseconds);
+pub struct WorldBorderSetWarningTime(time::Milliseconds);
 
 #[derive(Encode)]
 pub struct WorldBorderSetWarningBlocks(VarInt);
@@ -553,7 +562,7 @@ pub struct ChangeActiveSlot(i8);
 
 // AKA "Update View Position"
 #[derive(Encode)]
-pub struct UpdateActiveChunk(ChunkPosition<VarInt>);
+pub struct UpdateActiveChunk(chunk::Position<VarInt>);
 
 #[derive(Encode)]
 pub struct UpdateRenderDistance(VarInt);
@@ -561,21 +570,21 @@ pub struct UpdateRenderDistance(VarInt);
 /// Also updates where compasses point
 #[derive(Encode)]
 pub struct UpdateSpawnPosition {
-	location: PackedPosition,
+	location: pos::PackedPosition,
 	/// FIXME angle of what?
 	angle: f32,
 }
 
 #[derive(Encode)]
 pub struct DisplayScoreboard {
-	position: ScoreboardPosition,
+	position: scoreboard::Position,
 	name: PrefixedString,
 }
 
 // #[derive(Encode)]
 pub struct UpdateEntityMetadata {
 	entity_id: VarInt,
-	metadata: EntityMetadata,
+	metadata: entity::Metadata,
 }
 
 #[derive(Encode)]
@@ -588,13 +597,13 @@ pub struct AttachEntity {
 #[derive(Encode)]
 pub struct UpdateEntityVelocity {
 	entity_id: VarInt,
-	velocity: EntityVelocity,
+	velocity: entity::Velocity,
 }
 
 #[derive(Encode)]
 pub struct UpdateEntityEquipment {
 	entity_id: VarInt,
-	equipment: PrefixedVec<EquipmentEntry>,
+	equipment: PrefixedVec<entity::EquipmentEntry>,
 }
 
 #[derive(Encode)]
@@ -617,7 +626,7 @@ pub struct UpdatePlayerHealth {
 #[derive(Encode)]
 pub struct UpdateScoreboardObjective {
 	objective_name: PrefixedString,
-	update: ScoreboardObjectiveUpdate,
+	update: scoreboard::ObjectiveUpdate,
 }
 
 #[derive(Encode)]
@@ -638,35 +647,35 @@ pub struct UpdateTeam {
 pub struct UpdateScore {
 	/// Username for players; UUID for entities
 	entity_name: PrefixedString,
-	action: ScoreUpdate,
+	action: scoreboard::ScoreUpdate,
 }
 
 #[derive(Encode)]
 pub struct UpdateSimulationDistance(VarInt);
 
 #[derive(Encode)]
-pub struct SetTitleSubtitle(Chat);
+pub struct SetTitleSubtitle(chat::Chat);
 
 #[derive(Encode)]
 pub struct UpdateTime {
-	world_age: Ticks64,
-	time_of_day: Ticks64,
+	world_age: time::Ticks64,
+	time_of_day: time::Ticks64,
 }
 
 #[derive(Encode)]
-pub struct SetTitleTitle(Chat);
+pub struct SetTitleTitle(chat::Chat);
 
 #[derive(Encode)]
 pub struct SetTitleTimes {
-	fade_in: Ticks32,
-	stay: Ticks32,
-	fade_out: Ticks32,
+	fade_in: time::Ticks32,
+	stay: time::Ticks32,
+	fade_out: time::Ticks32,
 }
 
 #[derive(Encode)]
 pub struct PlayEntitySoundEffect {
 	sound_id: VarInt,
-	sound_category: SoundCategory,
+	sound_category: misc::SoundCategory,
 	entity_id: VarInt,
 	volume: f32,
 	pitch: f32,
@@ -675,8 +684,8 @@ pub struct PlayEntitySoundEffect {
 #[derive(Encode)]
 pub struct PlaySoundEffect {
 	sound_id: VarInt,
-	sound_category: SoundCategory,
-	position: EffectPosition,
+	sound_category: misc::SoundCategory,
+	position: pos::EffectPosition,
 	volume: f32,
 	pitch: f32,
 }
@@ -687,17 +696,17 @@ pub enum StopSound {
 	#[encde(wire_tag = 0)]
 	AllSounds,
 	#[encde(wire_tag = 1)]
-	ByCategory(SoundCategory),
+	ByCategory(misc::SoundCategory),
 	#[encde(wire_tag = 2)]
 	BySoundName(PrefixedString),
 	#[encde(wire_tag = 3)]
-	FullyQualified(SoundCategory, PrefixedString),
+	FullyQualified(misc::SoundCategory, PrefixedString),
 }
 
 #[derive(Encode)]
 pub struct UpdatePlayerListDecoration {
-	header: Chat,
-	footer: Chat,
+	header: chat::Chat,
+	footer: chat::Chat,
 }
 
 #[derive(Encode)]
@@ -717,8 +726,8 @@ pub struct CollectItem {
 #[derive(Encode)]
 pub struct TeleportEntity {
 	entity_id: VarInt,
-	position: F64Position,
-	rotation: AngleRotation,
+	position: pos::F64Position,
+	rotation: rot::AngleRotation,
 	on_ground: bool,
 }
 
@@ -727,7 +736,7 @@ pub struct TeleportEntity {
 #[derive(Encode)]
 pub struct UpdateEntityProperties {
 	entity_id: VarInt,
-	properties: PrefixedVec<EntityProperty>,
+	properties: PrefixedVec<entity::Property>,
 }
 
 #[derive(Encode)]
@@ -735,14 +744,14 @@ pub struct UpdateEntityEffect {
 	entity_id: VarInt,
 	effect_id: i8,
 	amplifier: i8,
-	duration: TicksVarInt,
+	duration: time::TicksVarInt,
 }
 
 #[derive(Encode)]
-pub struct DeclareRecipes(PrefixedVec<Recipe>);
+pub struct DeclareRecipes(PrefixedVec<recipes::Recipe>);
 
 #[derive(Encode)]
-pub struct DeclareTaggedGroups(PrefixedVec<TagGroup>);
+pub struct DeclareTaggedGroups(PrefixedVec<misc::TagGroup>);
 
 #[derive(Encode)]
 #[repr(u8)]
@@ -800,7 +809,7 @@ pub enum Packet {
 	#[encde(wire_tag = 0x19)]
 	PlayNamedSoundEffect(PlayNamedSoundEffect),
 	#[encde(wire_tag = 0x1a)]
-	Disconnect { reason: Chat },
+	Disconnect { reason: chat::Chat },
 	#[encde(wire_tag = 0x1b)]
 	UpdateEntityStatus(UpdateEntityStatus),
 	#[encde(wire_tag = 0x1c)]

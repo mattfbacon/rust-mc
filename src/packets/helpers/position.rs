@@ -9,7 +9,6 @@ pub struct UnpackedPosition<T> {
 }
 pub type F32Position = UnpackedPosition<f32>;
 pub type F64Position = UnpackedPosition<f64>;
-pub type EntityVelocity = UnpackedPosition<i16>;
 
 // XXX is it better to store the position as packed or unpacked?
 pub struct PackedPosition {

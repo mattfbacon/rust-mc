@@ -3,14 +3,14 @@ use encde::{Decode, Encode};
 
 #[derive(Encode)]
 #[repr(u8)]
-pub enum BossBarUpdateType {
+pub enum UpdateType {
 	#[encde(wire_tag = 0)]
 	Add {
 		title: Chat,
 		/// from 0 to 1
 		health: f32,
-		color: BossBarColor,
-		notches: BossBarNotches,
+		color: Color,
+		notches: Notches,
 		/// bit mask (TODO custom type)
 		/// 1 = darken sky
 		/// 2 = dragon bar
@@ -24,7 +24,7 @@ pub enum BossBarUpdateType {
 	#[encde(wire_tag = 3)]
 	UpdateTitle(Chat),
 	#[encde(wire_tag = 4)]
-	UpdateStyle { color: BossBarColor, notches: BossBarNotches },
+	UpdateStyle { color: Color, notches: Notches },
 	/// TODO custom type
 	#[encde(wire_tag = 5)]
 	UpdateFlags(u8),
@@ -32,7 +32,7 @@ pub enum BossBarUpdateType {
 
 #[derive(Encode, Decode)]
 #[repr(u8)]
-pub enum BossBarColor {
+pub enum Color {
 	Pink = 0,
 	Blue = 1,
 	Red = 2,
@@ -44,7 +44,7 @@ pub enum BossBarColor {
 
 #[derive(Encode, Decode)]
 #[repr(u8)]
-pub enum BossBarNotches {
+pub enum Notches {
 	None = 0,
 	Six = 1,
 	Ten = 2,

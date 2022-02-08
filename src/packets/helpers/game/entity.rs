@@ -1,4 +1,5 @@
 use super::super::wrappers::{std::*, uuid::Uuid};
+use super::entity;
 use super::slot::Slot;
 use bitvec::vec::BitVec;
 use encde::{Decode, Encode, Result as EResult};
@@ -7,26 +8,26 @@ use std::io::{Read, Write};
 
 // TODO implement
 // #[derive(Encode)]
-pub struct EntityMetadata(());
+pub struct Metadata(());
 
 #[derive(Encode)]
-pub struct EntityProperty {
+pub struct Property {
 	key: PrefixedString,
 	value: f64,
 	/// These must be applied in order of their type: Add, then AddPercent, then Multiply
-	modifiers: PrefixedVec<EntityPropertyModifier>,
+	modifiers: PrefixedVec<entity::PropertyModifier>,
 }
 
 #[derive(Encode)]
-pub struct EntityPropertyModifier {
+pub struct PropertyModifier {
 	uuid: Uuid,
 	amount: f64,
-	operation: EntityPropertyModifierType,
+	operation: PropertyModifierType,
 }
 
 #[derive(Encode)]
 #[repr(u8)]
-pub enum EntityPropertyModifierType {
+pub enum PropertyModifierType {
 	/// value += amount
 	Add = 0,
 	/// value += value * (amount / 100)
@@ -51,3 +52,5 @@ pub enum EquipmentSlot {
 	Chestplate = 4,
 	Helmet = 5,
 }
+
+pub type Velocity = super::super::position::UnpackedPosition<i16>;
