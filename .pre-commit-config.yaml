@@ -5,6 +5,10 @@ repos:
     -   id: check-yaml
     -   id: end-of-file-fixer
     -   id: trailing-whitespace
+    -   id: mixed-line-ending
+        args: ['--fix=lf']
+    -   id: check-added-large-files
+        args: ['--maxkb=500']
 -   repo: https://github.com/doublify/pre-commit-rust
     rev: eeee35a89e69d5772bdee97db1a6a898467b686e
     hooks:
