@@ -134,11 +134,21 @@ impl<T: Decode, const N: usize> Decode for [T; N] {
 	fn decode(reader: &mut dyn Read) -> Result<Self> {
 		unsafe {
 			#![allow(clippy::uninit_assumed_init)]
-			let mut ret: [T; N] = std::mem::MaybeUninit::uninit().assume_init();
-			for item in ret.iter_mut() {
-				std::ptr::write(item, T::decode(reader)?);
+			use std::mem::{ManuallyDrop, MaybeUninit};
+			let mut ret: ManuallyDrop<[T; N]> = ManuallyDrop::new(MaybeUninit::uninit().assume_init());
+			for (idx, item) in ret.iter_mut().enumerate() {
+				match T::decode(reader) {
+					Ok(decoded) => std::ptr::write(item, decoded),
+					Err(err) => {
+						// SAFETY: If an error occurs, we must drop only the items that have been initialized up to this point.
+						for must_drop_idx in 0..idx {
+							std::ptr::drop_in_place(ret.as_mut_ptr().add(must_drop_idx));
+						}
+						return Err(err);
+					}
+				}
 			}
-			Ok(ret)
+			Ok(ManuallyDrop::into_inner(ret))
 		}
 	}
 }
