@@ -8,7 +8,8 @@ impl Client {
 	pub(super) fn handle_status(mut self) -> anyhow::Result<()> {
 		trace!("Entering status state");
 		loop {
-			let packet = self.receive_packet()?;
+			let packet = self.socket.receive_packet()?;
+			let config = self.config.read().unwrap();
 			let response = match packet {
 				// client is free to close the connection at any time
 				None => {
@@ -17,15 +18,15 @@ impl Client {
 				Some(Receive::Ping(echo)) => Send::Pong(echo),
 				Some(Receive::RequestStatus) => Send::ReplyStatus(Json(send::StatusReply {
 					version: send::StatusVersion {
-						name: super::SERVER_VERSION.to_string(),
+						name: crate::server::SERVER_VERSION.to_string(),
 						protocol: super::PROTOCOL_VERSION,
 					},
 					players: send::StatusPlayers { max: 420, online: 69, sample: None },
-					description: send::StatusDescription { text: &self.config.listing.motd },
-					favicon: self.config.listing.icon.as_deref(),
+					description: send::StatusDescription { text: &config.listing.motd },
+					favicon: config.listing.icon.as_deref(),
 				})),
 			};
-			self.send_packet(&response)?;
+			self.socket.send_packet(&response)?;
 		}
 	}
 }

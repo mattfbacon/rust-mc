@@ -7,3 +7,20 @@ level = "debug"
 [[logging]]
 console = "stderr"
 level = "trace"
+
+[worlds.config]
+default_dimension = "world"
+
+[worlds.dimensions.world]
+# first entry is the default world for new players in this dimension
+worlds = ["overworld", "nether", "end"]
+
+[worlds.worlds.overworld]
+generator = "void"
+seed = 123
+[worlds.worlds.nether]
+generator = "void"
+seed = 456
+[worlds.worlds.end]
+generator = "void"
+seed = 789

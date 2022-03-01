@@ -3,6 +3,7 @@ use figment::{
 	Error, Figment,
 };
 use serde::Deserialize;
+use std::collections::HashMap;
 use std::path::PathBuf;
 
 fn default_port() -> u16 {
@@ -17,6 +18,24 @@ pub struct Config {
 	pub logging: Vec<LoggingConfig>,
 	#[serde(default)]
 	pub listing: ListingConfig,
+	pub worlds: Worlds,
+}
+
+#[derive(Deserialize)]
+pub struct Worlds {
+	pub config: WorldsConfig,
+	pub worlds: HashMap<String, figment::value::Dict>,
+	pub dimensions: HashMap<String, DimensionConfig>,
+}
+
+#[derive(Deserialize)]
+pub struct WorldsConfig {
+	pub default_dimension: String,
+}
+
+#[derive(Deserialize)]
+pub struct DimensionConfig {
+	pub worlds: Vec<String>,
 }
 
 #[derive(Deserialize)]

@@ -104,14 +104,14 @@ fn rsa_private_decrypt(key: &openssl::rsa::RsaRef<openssl::pkey::Private>, data:
 
 impl Client {
 	fn receive_login_start(&mut self) -> anyhow::Result<String> {
-		match self.receive_packet()? {
+		match self.socket.receive_packet()? {
 			None => anyhow::bail!("Client closed connection"),
 			Some(Receive::LoginStart { username }) => Ok(username.0),
 			Some(other) => anyhow::bail!("Expected Login Start packet but received {:?}", other),
 		}
 	}
 	fn receive_encryption_response(&mut self) -> anyhow::Result<receive::Encryption> {
-		match self.receive_packet()? {
+		match self.socket.receive_packet()? {
 			None => anyhow::bail!("Client closed connection"),
 			Some(Receive::Encryption(info)) => Ok(info),
 			Some(other) => anyhow::bail!("Expected Encryption Response packet but received {:?}", other),
@@ -120,9 +120,9 @@ impl Client {
 	fn request_encryption(&mut self) -> anyhow::Result<[u8; 4]> {
 		trace!("Requesting encryption");
 		let verify_token = rand::random();
-		self.send_packet(&Send::Encryption {
+		self.socket.send_packet(&Send::Encryption {
 			server_id: PrefixedString(String::new()),
-			public_key: PrefixedBorrowedBytes(&self.global_state.rsa_public_der),
+			public_key: PrefixedBorrowedBytes(&self.global_state.read().unwrap().rsa_public_der),
 			verify_token: PrefixedArray(verify_token),
 		})?;
 		Ok(verify_token)
@@ -133,16 +133,17 @@ impl Client {
 			verify_token: PrefixedBytes(encrypted_verify_token),
 		} = self.receive_encryption_response()?;
 		trace!("Received encryption response");
-		let decrypted_verify_token = rsa_private_decrypt(&self.global_state.rsa_key, &encrypted_verify_token)?;
+		let rsa_key = &self.global_state.read().unwrap().rsa_key;
+		let decrypted_verify_token = rsa_private_decrypt(&rsa_key, &encrypted_verify_token)?;
 		anyhow::ensure!(verify_token == decrypted_verify_token.as_slice(), "Verify token does not match");
-		Ok(rsa_private_decrypt(&self.global_state.rsa_key, &encrypted_shared_secret)?)
+		Ok(rsa_private_decrypt(&rsa_key, &encrypted_shared_secret)?)
 	}
 	fn make_cipher(shared_secret: &[u8]) -> anyhow::Result<Cipher> {
 		use cfb8::cipher::NewCipher;
 		Ok(Cipher::new_from_slices(shared_secret, shared_secret)?)
 	}
 	fn get_session(&mut self, username: String, shared_secret: &[u8]) -> anyhow::Result<SessionResponse> {
-		let mut auth_hash = sha::sha1::Sha1::default().digest(b"").digest(shared_secret).digest(&self.global_state.rsa_public_der).to_bytes();
+		let mut auth_hash = sha::sha1::Sha1::default().digest(b"").digest(shared_secret).digest(&self.global_state.read().unwrap().rsa_public_der).to_bytes();
 		let auth_hash = format_minecraft_sha1(&mut auth_hash);
 		trace!("Making request to session server");
 		let response = reqwest::blocking::get(reqwest::Url::parse_with_params(
@@ -172,7 +173,7 @@ impl Client {
 			uuid: UuidWrapper(session.uuid),
 			username: PrefixedString(session.username),
 		};
-		self.send_packet(&packet)?;
+		self.socket.send_packet(&packet)?;
 		self.handle_play()
 	}
 
@@ -185,7 +186,7 @@ impl Client {
 		let shared_secret = self.receive_shared_secret(verify_token)?;
 		let session_response = self.get_session(username, &shared_secret)?;
 		let cipher = Self::make_cipher(&shared_secret)?;
-		self.socket = Box::new(CipherWrapper::new(self.socket, cipher));
+		self.socket.wrap(move |socket| CipherWrapper::new(socket, cipher));
 		self.enter_play(session_response)
 	}
 }
