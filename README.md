@@ -1,3 +1,7 @@
+Abandoned.
+
+Reason: too many existing Rust implementations
+
 # Rust MC Server
 
 An attempt to implement a Minecraft server.
